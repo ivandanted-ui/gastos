@@ -225,13 +225,13 @@
             padding: 16px;
             display: flex;
             flex-direction: column;
+            gap: 12px;
         }
 
         .card-sub-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
             border-bottom: 2px solid var(--border);
             padding-bottom: 8px;
         }
@@ -240,6 +240,14 @@
             font-size: 1rem;
             font-weight: 700;
             color: var(--primary);
+        }
+
+        .holder-subgroup-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin: 4px 0;
+            text-transform: uppercase;
         }
 
         .charts-wrapper {
@@ -370,7 +378,7 @@
         <div class="action-bar">
             <button class="btn-action btn-income" onclick="openModal('modal-income')">➕ Ingreso</button>
             <button class="btn-action btn-expense" onclick="openModal('modal-expense')">➖ Gasto General</button>
-            <button class="btn-action btn-card" onclick="openModal('modal-card')">💳 Cargar Gasto en Tarjeta</button>
+            <button class="btn-action btn-card" onclick="openModalCardForCreate()">💳 Cargar Gasto en Tarjeta</button>
             <button class="btn-action btn-toggle-charts" onclick="toggleCharts()">📊 Mostrar / Ocultar Gráficos</button>
         </div>
 
@@ -382,7 +390,7 @@
             <div class="card"><h3>Balance Neto</h3><div class="amount" id="total-diferencia">$0</div></div>
         </div>
 
-        <!-- CONTENEDOR DE GRÁFICOS (OCULTO POR DEFECTO) -->
+        <!-- CONTENEDOR DE GRÁFICOS -->
         <div class="charts-wrapper" id="charts-wrapper">
             <div class="charts-grid">
                 <div class="chart-card">
@@ -455,7 +463,7 @@
             </div>
         </div>
 
-        <!-- SECCIÓN DE DETALLE ESPECÍFICO DE TARJETAS (DIVIDIDO EN COLUMNAS POR TIPO/FRANQUICIA) -->
+        <!-- SECCIÓN DE DETALLE ESPECÍFICO DE TARJETAS -->
         <div class="credit-cards-section">
             <h2 class="section-title" style="margin-bottom: 16px; text-align: center;">💳 Detalle Específico de Tarjetas de Crédito</h2>
             <div class="card-tabs">
@@ -531,14 +539,15 @@
     </div>
 </div>
 
-<!-- MODAL REGISTRO EXCLUSIVO TARJETA DE CRÉDITO -->
+<!-- MODAL REGISTRO Y EDICIÓN COMPLETA DE TARJETA DE CRÉDITO -->
 <div class="modal-overlay" id="modal-card">
     <div class="modal">
         <div class="modal-header">
-            <h2 class="text-blue">💳 Cargar Gasto en Tarjeta</h2>
+            <h2 class="text-blue" id="modal-card-title">💳 Cargar Gasto en Tarjeta</h2>
             <button class="close-modal" onclick="closeModal('modal-card')">&times;</button>
         </div>
         <form id="form-card">
+            <input type="hidden" id="card-id">
             <div class="modal-body">
                 <div class="form-group">
                     <label>Tarjeta</label>
@@ -565,7 +574,7 @@
                 <div class="form-group"><label>Detalle del Consumo</label><input type="text" id="card-detail" placeholder="Ej: Supermercado" required></div>
                 <div class="form-group"><label>Monto de la Cuota ($)</label><input type="number" step="0.01" id="card-amount" placeholder="Ej: 5000" required></div>
                 
-                <div class="form-group">
+                <div class="form-group" id="group-card-installments">
                     <label>Cantidad de Cuotas</label>
                     <select id="card-installments">
                         <option value="1">1 pago (Sin cuotas)</option>
@@ -599,7 +608,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" onclick="closeModal('modal-card')">Cancelar</button>
-                <button type="submit" style="background:var(--primary); color:white; border:none; padding:8px 16px; border-radius:8px;">Guardar Gasto</button>
+                <button type="submit" style="background:var(--primary); color:white; border:none; padding:8px 16px; border-radius:8px;" id="btn-save-card">Guardar Gasto</button>
             </div>
         </form>
     </div>
@@ -635,6 +644,16 @@
         wrapper.classList.toggle('visible');
     }
 
+    function openModalCardForCreate() {
+        document.getElementById('form-card').reset();
+        document.getElementById('card-id').value = '';
+        document.getElementById('modal-card-title').innerText = '💳 Cargar Gasto en Tarjeta';
+        document.getElementById('card-select').value = currentCardSelected;
+        document.getElementById('group-card-installments').style.display = 'flex';
+        updateCardFormFields();
+        openModal('modal-card', false);
+    }
+
     function openModal(id, resetForm = true) {
         if (resetForm) {
             if (id === 'modal-income') {
@@ -645,10 +664,6 @@
                 document.getElementById('form-expense').reset();
                 document.getElementById('expense-id').value = '';
                 document.getElementById('modal-expense-title').innerText = '➖ Nuevo Gasto';
-            } else if (id === 'modal-card') {
-                document.getElementById('form-card').reset();
-                document.getElementById('card-select').value = currentCardSelected;
-                updateCardFormFields();
             }
         }
         document.getElementById(id).classList.add('active');
@@ -742,6 +757,35 @@
         renderCardSection();
     }
 
+    function renderCardTableRows(itemsList) {
+        if (itemsList.length === 0) {
+            return `<tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 12px;">Sin gastos registrados</td></tr>`;
+        }
+        let rows = '';
+        itemsList.forEach(item => {
+            const monto = Number(item.monto);
+            const titularStr = item.titular ? ` (${item.titular})` : '';
+
+            rows += `
+                <tr>
+                    <td><strong>${item.detalle}</strong>${titularStr}</td>
+                    <td class="text-red">${formatMoney(monto)}</td>
+                    <td>${item.vencimiento || '-'}</td>
+                    <td>
+                        <span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="togglePaid(${item.id}, ${item.pagado})">
+                            ${item.pagado ? 'PAGADO' : 'POR PAGAR'}
+                        </span>
+                    </td>
+                    <td style="text-align: right;">
+                        <button class="btn-action-sm btn-edit-sm" onclick="editItem(${item.id})">✏️</button>
+                        <button class="btn-action-sm btn-danger-sm" onclick="deleteItem(${item.id})">✕</button>
+                    </td>
+                </tr>
+            `;
+        });
+        return rows;
+    }
+
     function renderCardSection() {
         document.getElementById('card-tab-title').innerText = `Gastos ${currentCardSelected}`;
         const wrapper = document.getElementById('card-columns-wrapper');
@@ -754,55 +798,77 @@
         let subGroups = [];
         if (currentCardSelected === 'Tarjeta BBVA') {
             subGroups = [
-                { title: '💳 BBVA Visa', typeKey: 'Visa' },
-                { title: '💳 BBVA Mastercard', typeKey: 'Mastercard' }
+                { title: '💳 BBVA Visa', typeKey: 'Visa', splitByHolder: false },
+                { title: '💳 BBVA Mastercard', typeKey: 'Mastercard', splitByHolder: true }
             ];
         } else if (currentCardSelected === 'Tarjeta Galicia') {
             subGroups = [
-                { title: '💳 Galicia Visa', typeKey: 'Visa' },
-                { title: '💳 Galicia American Express', typeKey: 'American Express' }
+                { title: '💳 Galicia Visa', typeKey: 'Visa', splitByHolder: false },
+                { title: '💳 Galicia American Express', typeKey: 'American Express', splitByHolder: false }
             ];
         } else {
             subGroups = [
-                { title: '💳 Tarjeta ICBC (General)', typeKey: null }
+                { title: '💳 Tarjeta ICBC (General)', typeKey: null, splitByHolder: false }
             ];
         }
 
         subGroups.forEach(group => {
-            let filteredItems = [];
-            if (group.typeKey) {
-                filteredItems = cardExpenses.filter(i => i.tipo_tarjeta === group.typeKey);
-            } else {
-                filteredItems = cardExpenses;
-            }
-
+            let filteredItems = group.typeKey ? cardExpenses.filter(i => i.tipo_tarjeta === group.typeKey) : cardExpenses;
             const subTotal = filteredItems.reduce((sum, item) => sum + Number(item.monto), 0);
 
-            let tableRowsHtml = '';
-            if (filteredItems.length === 0) {
-                tableRowsHtml = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 16px;">Sin gastos registrados</td></tr>`;
-            } else {
-                filteredItems.forEach(item => {
-                    const monto = Number(item.monto);
-                    const titularStr = item.titular ? ` (${item.titular})` : '';
+            let contentHtml = '';
 
-                    tableRowsHtml += `
-                        <tr>
-                            <td><strong>${item.detalle}</strong>${titularStr}</td>
-                            <td class="text-red">${formatMoney(monto)}</td>
-                            <td>${item.vencimiento || '-'}</td>
-                            <td>
-                                <span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="togglePaid(${item.id}, ${item.pagado})">
-                                    ${item.pagado ? 'PAGADO' : 'POR PAGAR'}
-                                </span>
-                            </td>
-                            <td style="text-align: right;">
-                                <button class="btn-action-sm btn-edit-sm" onclick="editItem(${item.id})">✏️</button>
-                                <button class="btn-action-sm btn-danger-sm" onclick="deleteItem(${item.id})">✕</button>
-                            </td>
-                        </tr>
+            if (group.splitByHolder) {
+                const itemsIvan = filteredItems.filter(i => i.titular === 'Iván');
+                const itemsAdri = filteredItems.filter(i => i.titular === 'Adri');
+                const itemsOtros = filteredItems.filter(i => i.titular !== 'Iván' && i.titular !== 'Adri');
+
+                contentHtml += `
+                    <div class="holder-subgroup-title">👤 Gastos Iván</div>
+                    <div class="table-container" style="margin-bottom: 12px;">
+                        <table>
+                            <thead>
+                                <tr><th>Consumo</th><th>Monto</th><th>Venc.</th><th>Estado</th><th style="text-align: right;">Acciones</th></tr>
+                            </thead>
+                            <tbody>${renderCardTableRows(itemsIvan)}</tbody>
+                        </table>
+                    </div>
+
+                    <div class="holder-subgroup-title">👤 Gastos Adri</div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>Consumo</th><th>Monto</th><th>Venc.</th><th>Estado</th><th style="text-align: right;">Acciones</th></tr>
+                            </thead>
+                            <tbody>${renderCardTableRows(itemsAdri)}</tbody>
+                        </table>
+                    </div>
+                `;
+
+                if (itemsOtros.length > 0) {
+                    contentHtml += `
+                        <div class="holder-subgroup-title" style="margin-top: 12px;">👤 Sin Titular / Otros</div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr><th>Consumo</th><th>Monto</th><th>Venc.</th><th>Estado</th><th style="text-align: right;">Acciones</th></tr>
+                                </thead>
+                                <tbody>${renderCardTableRows(itemsOtros)}</tbody>
+                            </table>
+                        </div>
                     `;
-                });
+                }
+            } else {
+                contentHtml = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr><th>Consumo</th><th>Monto</th><th>Venc.</th><th>Estado</th><th style="text-align: right;">Acciones</th></tr>
+                            </thead>
+                            <tbody>${renderCardTableRows(filteredItems)}</tbody>
+                        </table>
+                    </div>
+                `;
             }
 
             const columnHtml = `
@@ -811,22 +877,7 @@
                         <span class="card-sub-title">${group.title}</span>
                         <strong class="text-red">${formatMoney(subTotal)}</strong>
                     </div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Consumo</th>
-                                    <th>Monto</th>
-                                    <th>Venc.</th>
-                                    <th>Estado</th>
-                                    <th style="text-align: right;">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${tableRowsHtml}
-                            </tbody>
-                        </table>
-                    </div>
+                    ${contentHtml}
                 </div>
             `;
             wrapper.innerHTML += columnHtml;
@@ -995,6 +1046,8 @@
         const item = monthItems.find(i => i.id === id);
         if (!item) return;
 
+        const cardCategories = ["Tarjeta BBVA", "Tarjeta ICBC", "Tarjeta Galicia"];
+
         if (item.tipo === 'INCOME') {
             document.getElementById('income-id').value = item.id;
             document.getElementById('income-detail').value = item.detalle;
@@ -1002,6 +1055,22 @@
             document.getElementById('income-venc').value = item.vencimiento || '';
             document.getElementById('modal-income-title').innerText = '✏️ Editar Ingreso';
             openModal('modal-income', false);
+        } else if (cardCategories.includes(item.categoria)) {
+            // Edición completa de Tarjeta de Crédito
+            document.getElementById('card-id').value = item.id;
+            document.getElementById('modal-card-title').innerText = '✏️ Editar Gasto de Tarjeta';
+            document.getElementById('card-select').value = item.categoria;
+            updateCardFormFields();
+
+            if (item.titular) document.getElementById('card-holder').value = item.titular;
+            if (item.tipo_tarjeta) document.getElementById('card-type').value = item.tipo_tarjeta;
+
+            document.getElementById('card-detail').value = item.detalle;
+            document.getElementById('card-amount').value = item.monto;
+            document.getElementById('card-venc').value = item.vencimiento || '';
+            document.getElementById('group-card-installments').style.display = 'none';
+
+            openModal('modal-card', false);
         } else {
             document.getElementById('expense-id').value = item.id;
             document.getElementById('expense-cat').value = item.categoria;
@@ -1077,13 +1146,11 @@
 
     document.getElementById('form-card').addEventListener('submit', async function(e) {
         e.preventDefault();
+        const id = document.getElementById('card-id').value;
         const venc = document.getElementById('card-venc').value || '-';
         const dia = venc.includes('/') ? parseInt(venc.split('/')[0]) : 31;
         const cardCategory = document.getElementById('card-select').value;
-        
-        // Se toma directamente el valor introducido como el valor de cada cuota
         const installmentAmount = parseFloat(document.getElementById('card-amount').value);
-        const installments = parseInt(document.getElementById('card-installments').value);
         const detailBase = document.getElementById('card-detail').value;
 
         let titularVal = null;
@@ -1096,31 +1163,47 @@
             cardTypeVal = document.getElementById('card-type').value;
         }
 
-        const currentMonthIndex = monthsList.indexOf(currentMonth);
-        let recordsToInsert = [];
-
-        for (let i = 0; i < installments; i++) {
-            const targetMonthIndex = currentMonthIndex + i;
-            if (targetMonthIndex >= monthsList.length) break;
-
-            const targetMonth = monthsList[targetMonthIndex];
-            const detailText = installments > 1 ? `${detailBase} (${i + 1}/${installments})` : detailBase;
-
-            recordsToInsert.push({
-                mes: targetMonth,
-                tipo: 'EXPENSE',
+        if (id) {
+            // Edición de un registro de tarjeta individual existente
+            const updateRecord = {
                 categoria: cardCategory,
-                detalle: detailText,
+                detalle: detailBase,
                 monto: parseFloat(installmentAmount.toFixed(2)),
                 vencimiento: venc,
                 dia: dia,
-                pagado: false,
                 titular: titularVal,
                 tipo_tarjeta: cardTypeVal
-            });
-        }
+            };
+            await db.from('movimientos').update(updateRecord).eq('id', id);
+        } else {
+            // Creación de consumo nuevo (con opción de cuotas)
+            const installments = parseInt(document.getElementById('card-installments').value);
+            const currentMonthIndex = monthsList.indexOf(currentMonth);
+            let recordsToInsert = [];
 
-        await db.from('movimientos').insert(recordsToInsert);
+            for (let i = 0; i < installments; i++) {
+                const targetMonthIndex = currentMonthIndex + i;
+                if (targetMonthIndex >= monthsList.length) break;
+
+                const targetMonth = monthsList[targetMonthIndex];
+                const detailText = installments > 1 ? `${detailBase} (${i + 1}/${installments})` : detailBase;
+
+                recordsToInsert.push({
+                    mes: targetMonth,
+                    tipo: 'EXPENSE',
+                    categoria: cardCategory,
+                    detalle: detailText,
+                    monto: parseFloat(installmentAmount.toFixed(2)),
+                    vencimiento: venc,
+                    dia: dia,
+                    pagado: false,
+                    titular: titularVal,
+                    tipo_tarjeta: cardTypeVal
+                });
+            }
+
+            await db.from('movimientos').insert(recordsToInsert);
+        }
 
         closeModal('modal-card');
         this.reset();
