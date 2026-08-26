@@ -563,7 +563,7 @@
                 </div>
 
                 <div class="form-group"><label>Detalle del Consumo</label><input type="text" id="card-detail" placeholder="Ej: Supermercado" required></div>
-                <div class="form-group"><label>Monto Total ($)</label><input type="number" step="0.01" id="card-amount" required></div>
+                <div class="form-group"><label>Monto de la Cuota ($)</label><input type="number" step="0.01" id="card-amount" placeholder="Ej: 5000" required></div>
                 
                 <div class="form-group">
                     <label>Cantidad de Cuotas</label>
@@ -571,10 +571,26 @@
                         <option value="1">1 pago (Sin cuotas)</option>
                         <option value="2">2 cuotas</option>
                         <option value="3">3 cuotas</option>
+                        <option value="4">4 cuotas</option>
+                        <option value="5">5 cuotas</option>
                         <option value="6">6 cuotas</option>
+                        <option value="7">7 cuotas</option>
+                        <option value="8">8 cuotas</option>
                         <option value="9">9 cuotas</option>
+                        <option value="10">10 cuotas</option>
+                        <option value="11">11 cuotas</option>
                         <option value="12">12 cuotas</option>
+                        <option value="13">13 cuotas</option>
+                        <option value="14">14 cuotas</option>
+                        <option value="15">15 cuotas</option>
+                        <option value="16">16 cuotas</option>
+                        <option value="17">17 cuotas</option>
                         <option value="18">18 cuotas</option>
+                        <option value="19">19 cuotas</option>
+                        <option value="20">20 cuotas</option>
+                        <option value="21">21 cuotas</option>
+                        <option value="22">22 cuotas</option>
+                        <option value="23">23 cuotas</option>
                         <option value="24">24 cuotas</option>
                     </select>
                 </div>
@@ -735,7 +751,6 @@
         const totalBank = cardExpenses.reduce((sum, item) => sum + Number(item.monto), 0);
         document.getElementById('card-tab-total').innerText = formatMoney(totalBank);
 
-        // Definir subgrupos/columnas según la tarjeta
         let subGroups = [];
         if (currentCardSelected === 'Tarjeta BBVA') {
             subGroups = [
@@ -866,7 +881,6 @@
             const isCardCategory = cardCategories.includes(category);
 
             if (isCardCategory) {
-                // PARA TARJETAS: Solo se muestra UNA FILA TOTALIZADORA
                 const allPaid = categoryItems.every(i => i.pagado);
 
                 gastosBody.innerHTML += `
@@ -884,7 +898,6 @@
                     </tr>
                 `;
             } else {
-                // PARA GASTOS GENERALES (Iván, Adri, Casa): Se muestra el encabezado y cada ítem individual
                 gastosBody.innerHTML += `
                     <tr class="category-group-row">
                         <td colspan="2">📌 ${category}</td>
@@ -1067,7 +1080,9 @@
         const venc = document.getElementById('card-venc').value || '-';
         const dia = venc.includes('/') ? parseInt(venc.split('/')[0]) : 31;
         const cardCategory = document.getElementById('card-select').value;
-        const totalAmount = parseFloat(document.getElementById('card-amount').value);
+        
+        // Se toma directamente el valor introducido como el valor de cada cuota
+        const installmentAmount = parseFloat(document.getElementById('card-amount').value);
         const installments = parseInt(document.getElementById('card-installments').value);
         const detailBase = document.getElementById('card-detail').value;
 
@@ -1081,9 +1096,7 @@
             cardTypeVal = document.getElementById('card-type').value;
         }
 
-        const installmentAmount = totalAmount / installments;
         const currentMonthIndex = monthsList.indexOf(currentMonth);
-
         let recordsToInsert = [];
 
         for (let i = 0; i < installments; i++) {
