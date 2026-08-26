@@ -152,6 +152,7 @@
         .btn-income { background-color: var(--success); color: white; }
         .btn-expense { background-color: var(--danger); color: white; }
         .btn-card { background-color: var(--primary); color: white; }
+        .btn-toggle-charts { background-color: var(--info); color: white; }
 
         .summary-grid {
             display: grid;
@@ -182,6 +183,7 @@
             border: 1px solid var(--border);
             border-radius: 16px;
             padding: 20px;
+            margin-top: 28px;
             margin-bottom: 28px;
         }
 
@@ -210,11 +212,20 @@
             border-color: var(--primary);
         }
 
+        /* GRÁFICOS OCULTOS POR DEFECTO */
+        .charts-wrapper {
+            display: none;
+            margin-bottom: 28px;
+        }
+
+        .charts-wrapper.visible {
+            display: block;
+        }
+
         .charts-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 16px;
-            margin-bottom: 28px;
         }
 
         .chart-card {
@@ -244,6 +255,15 @@
         table { width: 100%; border-collapse: collapse; font-size: 0.88rem; text-align: left; }
         th, td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
         th { background-color: rgba(0,0,0,0.02); color: var(--text-muted); }
+
+        /* Estilo para las filas agrupadoras */
+        .category-group-row td {
+            background-color: var(--card-credit-bg);
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 0.9rem;
+            border-top: 2px solid var(--border);
+        }
 
         .badge {
             padding: 4px 8px;
@@ -318,6 +338,7 @@
             <button class="btn-action btn-income" onclick="openModal('modal-income')">➕ Ingreso</button>
             <button class="btn-action btn-expense" onclick="openModal('modal-expense')">➖ Gasto General</button>
             <button class="btn-action btn-card" onclick="openModal('modal-card')">💳 Cargar Gasto en Tarjeta</button>
+            <button class="btn-action btn-toggle-charts" onclick="toggleCharts()">📊 Mostrar / Ocultar Gráficos</button>
         </div>
 
         <div class="summary-grid">
@@ -328,52 +349,25 @@
             <div class="card"><h3>Balance Neto</h3><div class="amount" id="total-diferencia">$0</div></div>
         </div>
 
-        <!-- SECCIÓN DE SUBPÁGINA DE TARJETAS DE CRÉDITO -->
-        <div class="credit-cards-section">
-            <h2 class="section-title" style="margin-bottom: 16px; text-align: center;">💳 Detalle de Tarjetas de Crédito</h2>
-            <div class="card-tabs">
-                <button class="tab-btn active" id="tab-bbva" onclick="switchCardTab('Tarjeta BBVA')">Tarjeta BBVA</button>
-                <button class="tab-btn" id="tab-icbc" onclick="switchCardTab('Tarjeta ICBC')">Tarjeta ICBC</button>
-                <button class="tab-btn" id="tab-galicia" onclick="switchCardTab('Tarjeta Galicia')">Tarjeta Galicia</button>
-            </div>
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 id="card-tab-title" style="margin: 0; font-size: 1.1rem; color: var(--primary);">Gastos Tarjeta BBVA</h3>
-                <div style="font-weight: 700; font-size: 1.1rem;">Total: <span id="card-tab-total" class="text-red">$0</span></div>
-            </div>
-
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Detalle</th>
-                            <th>Info Tarjeta</th>
-                            <th>Monto</th>
-                            <th>Fecha / Venc.</th>
-                            <th>Estado</th>
-                            <th style="text-align: right;">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="card-table-body"></tbody>
-                </table>
+        <!-- CONTENEDOR DE GRÁFICOS (OCULTO POR DEFECTO) -->
+        <div class="charts-wrapper" id="charts-wrapper">
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>Primeros 10 días</h3>
+                    <div class="chart-container"><canvas id="firstTenDaysChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <h3>Gastos por Categoría</h3>
+                    <div class="chart-container"><canvas id="categoryChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <h3>Estado de Pagos</h3>
+                    <div class="chart-container"><canvas id="statusChart"></canvas></div>
+                </div>
             </div>
         </div>
 
-        <div class="charts-grid">
-            <div class="chart-card">
-                <h3>Primeros 10 días</h3>
-                <div class="chart-container"><canvas id="firstTenDaysChart"></canvas></div>
-            </div>
-            <div class="chart-card">
-                <h3>Gastos por Categoría</h3>
-                <div class="chart-container"><canvas id="categoryChart"></canvas></div>
-            </div>
-            <div class="chart-card">
-                <h3>Estado de Pagos</h3>
-                <div class="chart-container"><canvas id="statusChart"></canvas></div>
-            </div>
-        </div>
-
+        <!-- TABLAS PRINCIPALES (INGRESOS Y GASTOS AGRUPADOS) -->
         <div class="tables-grid">
             <div>
                 <div class="section-header">
@@ -397,7 +391,7 @@
 
             <div>
                 <div class="section-header">
-                    <h2 class="section-title text-red">💸 Todos los Gastos del Mes</h2>
+                    <h2 class="section-title text-red">💸 Todos los Gastos del Mes (Agrupados)</h2>
                     <div class="filter-controls">
                         <select id="filter-cat" onchange="renderTables()">
                             <option value="ALL">Todas las categorías</option>
@@ -427,6 +421,38 @@
                 </div>
             </div>
         </div>
+
+        <!-- SECCIÓN DE DETALLE ESPECÍFICO DE TARJETAS DE CRÉDITO (PARTE INFERIOR) -->
+        <div class="credit-cards-section">
+            <h2 class="section-title" style="margin-bottom: 16px; text-align: center;">💳 Detalle Específico de Tarjetas de Crédito</h2>
+            <div class="card-tabs">
+                <button class="tab-btn active" id="tab-bbva" onclick="switchCardTab('Tarjeta BBVA')">Tarjeta BBVA</button>
+                <button class="tab-btn" id="tab-icbc" onclick="switchCardTab('Tarjeta ICBC')">Tarjeta ICBC</button>
+                <button class="tab-btn" id="tab-galicia" onclick="switchCardTab('Tarjeta Galicia')">Tarjeta Galicia</button>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 id="card-tab-title" style="margin: 0; font-size: 1.1rem; color: var(--primary);">Gastos Tarjeta BBVA</h3>
+                <div style="font-weight: 700; font-size: 1.1rem;">Total: <span id="card-tab-total" class="text-red">$0</span></div>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Detalle</th>
+                            <th>Info Tarjeta</th>
+                            <th>Monto</th>
+                            <th>Fecha / Venc.</th>
+                            <th>Estado</th>
+                            <th style="text-align: right;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="card-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -485,7 +511,7 @@
     </div>
 </div>
 
-<!-- MODAL REGISTRO EXCLUSIVO TARJETA DE CRÉDITO CON OPCIONES ADICIONALES -->
+<!-- MODAL REGISTRO EXCLUSIVO TARJETA DE CRÉDITO -->
 <div class="modal-overlay" id="modal-card">
     <div class="modal">
         <div class="modal-header">
@@ -570,6 +596,11 @@
         document.body.classList.add('dark-theme');
         document.getElementById('theme-icon').innerText = '☀️';
         document.getElementById('theme-text').innerText = 'Modo Claro';
+    }
+
+    function toggleCharts() {
+        const wrapper = document.getElementById('charts-wrapper');
+        wrapper.classList.toggle('visible');
     }
 
     function openModal(id, resetForm = true) {
@@ -723,42 +754,67 @@
         let totalIngresos = 0, totalCobrar = 0, totalGastos = 0, totalPagar = 0;
         const catFilter = document.getElementById('filter-cat').value;
 
-        monthItems.forEach(item => {
+        // Render Ingresos
+        monthItems.filter(i => i.tipo === 'INCOME').forEach(item => {
             const monto = Number(item.monto);
-            if (item.tipo === 'INCOME') {
-                totalIngresos += monto;
-                if (!item.pagado) totalCobrar += monto;
+            totalIngresos += monto;
+            if (!item.pagado) totalCobrar += monto;
 
-                ingresosBody.innerHTML += `
+            ingresosBody.innerHTML += `
+                <tr>
+                    <td><strong>${item.detalle}</strong></td>
+                    <td class="text-green">${formatMoney(monto)}</td>
+                    <td>${item.vencimiento || '-'}</td>
+                    <td><span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="togglePaid(${item.id}, ${item.pagado})">${item.pagado ? 'COBRADO' : 'POR COBRAR'}</span></td>
+                    <td style="text-align: right;">
+                        <button class="btn-action-sm btn-edit-sm" onclick="editItem(${item.id})">✏️</button>
+                        <button class="btn-action-sm btn-danger-sm" onclick="deleteItem(${item.id})">✕</button>
+                    </td>
+                </tr>`;
+        });
+
+        // Agrupación de Gastos por Categoría/Tarjeta
+        const allExpenses = monthItems.filter(i => i.tipo === 'EXPENSE');
+        allExpenses.forEach(i => {
+            totalGastos += Number(i.monto);
+            if (!i.pagado) totalPagar += Number(i.monto);
+        });
+
+        const categoriesOrder = ["Gastos Ivan", "Gastos Adri", "Gastos Casa", "Tarjeta BBVA", "Tarjeta ICBC", "Tarjeta Galicia"];
+        
+        categoriesOrder.forEach(category => {
+            if (catFilter !== 'ALL' && catFilter !== category) return;
+
+            const categoryItems = allExpenses.filter(i => i.categoria === category);
+            if (categoryItems.length === 0) return;
+
+            let catSubtotal = categoryItems.reduce((sum, item) => sum + Number(item.monto), 0);
+
+            // Fila de Encabezado de Grupo
+            gastosBody.innerHTML += `
+                <tr class="category-group-row">
+                    <td colspan="2">📌 ${category}</td>
+                    <td class="text-red">${formatMoney(catSubtotal)}</td>
+                    <td colspan="3"></td>
+                </tr>
+            `;
+
+            // Filas de Gastos dentro de la Categoría
+            categoryItems.forEach(item => {
+                const monto = Number(item.monto);
+                gastosBody.innerHTML += `
                     <tr>
-                        <td><strong>${item.detalle}</strong></td>
-                        <td class="text-green">${formatMoney(monto)}</td>
+                        <td><span class="cat-tag">${item.categoria}</span></td>
+                        <td>${item.detalle}</td>
+                        <td>${formatMoney(monto)}</td>
                         <td>${item.vencimiento || '-'}</td>
-                        <td><span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="togglePaid(${item.id}, ${item.pagado})">${item.pagado ? 'COBRADO' : 'POR COBRAR'}</span></td>
+                        <td><span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="togglePaid(${item.id}, ${item.pagado})">${item.pagado ? 'PAGADO' : 'POR PAGAR'}</span></td>
                         <td style="text-align: right;">
                             <button class="btn-action-sm btn-edit-sm" onclick="editItem(${item.id})">✏️</button>
                             <button class="btn-action-sm btn-danger-sm" onclick="deleteItem(${item.id})">✕</button>
                         </td>
                     </tr>`;
-            } else {
-                totalGastos += monto;
-                if (!item.pagado) totalPagar += monto;
-
-                if (catFilter === 'ALL' || item.categoria === catFilter) {
-                    gastosBody.innerHTML += `
-                        <tr>
-                            <td><span class="cat-tag">${item.categoria}</span></td>
-                            <td>${item.detalle}</td>
-                            <td>${formatMoney(monto)}</td>
-                            <td>${item.vencimiento || '-'}</td>
-                            <td><span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="togglePaid(${item.id}, ${item.pagado})">${item.pagado ? 'PAGADO' : 'POR PAGAR'}</span></td>
-                            <td style="text-align: right;">
-                                <button class="btn-action-sm btn-edit-sm" onclick="editItem(${item.id})">✏️</button>
-                                <button class="btn-action-sm btn-danger-sm" onclick="deleteItem(${item.id})">✕</button>
-                            </td>
-                        </tr>`;
-                }
-            }
+            });
         });
 
         const diff = totalIngresos - totalGastos;
@@ -912,7 +968,6 @@
         fetchMonthData();
     });
 
-    // GUARDAR GASTOS DE TARJETA CON MULTI-CUOTAS AUTOMÁTICAS
     document.getElementById('form-card').addEventListener('submit', async function(e) {
         e.preventDefault();
         const venc = document.getElementById('card-venc').value || '-';
@@ -939,7 +994,7 @@
 
         for (let i = 0; i < installments; i++) {
             const targetMonthIndex = currentMonthIndex + i;
-            if (targetMonthIndex >= monthsList.length) break; // Si supera diciembre del año actual
+            if (targetMonthIndex >= monthsList.length) break;
 
             const targetMonth = monthsList[targetMonthIndex];
             const detailText = installments > 1 ? `${detailBase} (${i + 1}/${installments})` : detailBase;
