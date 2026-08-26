@@ -548,45 +548,55 @@
     }
 
     document.getElementById('form-income').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const venc = document.getElementById('income-venc').value || '-';
-        const dia = venc.includes('/') ? parseInt(venc.split('/')[0]) : 31;
+    e.preventDefault();
+    const venc = document.getElementById('income-venc').value || '-';
+    const dia = venc.includes('/') ? parseInt(venc.split('/')[0]) : 31;
 
-        await db.from('movimientos').insert([{
-            mes: currentMonth,
-            tipo: 'INCOME',
-            detalle: document.getElementById('income-detail').value,
-            monto: parseFloat(document.getElementById('income-amount').value),
-            vencimiento: venc,
-            dia: dia,
-            pagado: false
-        }]);
+    const { data, error } = await db.from('movimientos').insert([{
+        mes: currentMonth,
+        tipo: 'INCOME',
+        detalle: document.getElementById('income-detail').value,
+        monto: parseFloat(document.getElementById('income-amount').value),
+        vencimiento: venc,
+        dia: dia,
+        pagado: false
+    }]);
 
+    if (error) {
+        alert("Error al guardar en Supabase: " + error.message);
+        console.error(error);
+    } else {
         closeModal('modal-income');
         this.reset();
         fetchMonthData();
-    });
+    }
+});
 
-    document.getElementById('form-expense').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const venc = document.getElementById('expense-venc').value || '-';
-        const dia = venc.includes('/') ? parseInt(venc.split('/')[0]) : 31;
+document.getElementById('form-expense').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const venc = document.getElementById('expense-venc').value || '-';
+    const dia = venc.includes('/') ? parseInt(venc.split('/')[0]) : 31;
 
-        await db.from('movimientos').insert([{
-            mes: currentMonth,
-            tipo: 'EXPENSE',
-            categoria: document.getElementById('expense-cat').value,
-            detalle: document.getElementById('expense-detail').value,
-            monto: parseFloat(document.getElementById('expense-amount').value),
-            vencimiento: venc,
-            dia: dia,
-            pagado: false
-        }]);
+    const { data, error } = await db.from('movimientos').insert([{
+        mes: currentMonth,
+        tipo: 'EXPENSE',
+        categoria: document.getElementById('expense-cat').value,
+        detalle: document.getElementById('expense-detail').value,
+        monto: parseFloat(document.getElementById('expense-amount').value),
+        vencimiento: venc,
+        dia: dia,
+        pagado: false
+    }]);
 
+    if (error) {
+        alert("Error al guardar en Supabase: " + error.message);
+        console.error(error);
+    } else {
         closeModal('modal-expense');
         this.reset();
         fetchMonthData();
-    });
+    }
+});
 
     fetchHomeSummary();
 </script>
