@@ -212,6 +212,36 @@
             border-color: var(--primary);
         }
 
+        .card-columns-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .card-sub-column {
+            background: var(--card-credit-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-sub-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        .card-sub-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
         .charts-wrapper {
             display: none;
             margin-bottom: 28px;
@@ -425,7 +455,7 @@
             </div>
         </div>
 
-        <!-- SECCIÓN DE DETALLE ESPECÍFICO DE TARJETAS (PARTE INFERIOR) -->
+        <!-- SECCIÓN DE DETALLE ESPECÍFICO DE TARJETAS (DIVIDIDO EN COLUMNAS POR TIPO/FRANQUICIA) -->
         <div class="credit-cards-section">
             <h2 class="section-title" style="margin-bottom: 16px; text-align: center;">💳 Detalle Específico de Tarjetas de Crédito</h2>
             <div class="card-tabs">
@@ -434,26 +464,13 @@
                 <button class="tab-btn" id="tab-galicia" onclick="switchCardTab('Tarjeta Galicia')">Tarjeta Galicia</button>
             </div>
             
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <h3 id="card-tab-title" style="margin: 0; font-size: 1.1rem; color: var(--primary);">Gastos Tarjeta BBVA</h3>
-                <div style="font-weight: 700; font-size: 1.1rem;">Total: <span id="card-tab-total" class="text-red">$0</span></div>
+                <div style="font-weight: 700; font-size: 1.1rem;">Total Banco: <span id="card-tab-total" class="text-red">$0</span></div>
             </div>
 
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Detalle</th>
-                            <th>Info Tarjeta</th>
-                            <th>Monto</th>
-                            <th>Fecha / Venc.</th>
-                            <th>Estado</th>
-                            <th style="text-align: right;">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="card-table-body"></tbody>
-                </table>
-            </div>
+            <!-- COLUMNAS POR TARJETA -->
+            <div class="card-columns-container" id="card-columns-wrapper"></div>
         </div>
 
     </div>
@@ -711,36 +728,94 @@
 
     function renderCardSection() {
         document.getElementById('card-tab-title').innerText = `Gastos ${currentCardSelected}`;
-        const cardBody = document.getElementById('card-table-body');
-        cardBody.innerHTML = '';
-        
+        const wrapper = document.getElementById('card-columns-wrapper');
+        wrapper.innerHTML = '';
+
         const cardExpenses = monthItems.filter(i => i.tipo === 'EXPENSE' && i.categoria === currentCardSelected);
-        let totalCard = 0;
+        const totalBank = cardExpenses.reduce((sum, item) => sum + Number(item.monto), 0);
+        document.getElementById('card-tab-total').innerText = formatMoney(totalBank);
 
-        cardExpenses.forEach(item => {
-            const monto = Number(item.monto);
-            totalCard += monto;
-            
-            let cardMetaInfo = [];
-            if (item.titular) cardMetaInfo.push(`Titular: <strong>${item.titular}</strong>`);
-            if (item.tipo_tarjeta) cardMetaInfo.push(`Tarjeta: <strong>${item.tipo_tarjeta}</strong>`);
-            const metaStr = cardMetaInfo.length > 0 ? cardMetaInfo.join(' | ') : '-';
+        // Definir subgrupos/columnas según la tarjeta
+        let subGroups = [];
+        if (currentCardSelected === 'Tarjeta BBVA') {
+            subGroups = [
+                { title: '💳 BBVA Visa', typeKey: 'Visa' },
+                { title: '💳 BBVA Mastercard', typeKey: 'Mastercard' }
+            ];
+        } else if (currentCardSelected === 'Tarjeta Galicia') {
+            subGroups = [
+                { title: '💳 Galicia Visa', typeKey: 'Visa' },
+                { title: '💳 Galicia American Express', typeKey: 'American Express' }
+            ];
+        } else {
+            subGroups = [
+                { title: '💳 Tarjeta ICBC (General)', typeKey: null }
+            ];
+        }
 
-            cardBody.innerHTML += `
-                <tr>
-                    <td><strong>${item.detalle}</strong></td>
-                    <td>${metaStr}</td>
-                    <td class="text-red">${formatMoney(monto)}</td>
-                    <td>${item.vencimiento || '-'}</td>
-                    <td><span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="togglePaid(${item.id}, ${item.pagado})">${item.pagado ? 'PAGADO' : 'POR PAGAR'}</span></td>
-                    <td style="text-align: right;">
-                        <button class="btn-action-sm btn-edit-sm" onclick="editItem(${item.id})">✏️</button>
-                        <button class="btn-action-sm btn-danger-sm" onclick="deleteItem(${item.id})">✕</button>
-                    </td>
-                </tr>`;
+        subGroups.forEach(group => {
+            let filteredItems = [];
+            if (group.typeKey) {
+                filteredItems = cardExpenses.filter(i => i.tipo_tarjeta === group.typeKey);
+            } else {
+                filteredItems = cardExpenses;
+            }
+
+            const subTotal = filteredItems.reduce((sum, item) => sum + Number(item.monto), 0);
+
+            let tableRowsHtml = '';
+            if (filteredItems.length === 0) {
+                tableRowsHtml = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 16px;">Sin gastos registrados</td></tr>`;
+            } else {
+                filteredItems.forEach(item => {
+                    const monto = Number(item.monto);
+                    const titularStr = item.titular ? ` (${item.titular})` : '';
+
+                    tableRowsHtml += `
+                        <tr>
+                            <td><strong>${item.detalle}</strong>${titularStr}</td>
+                            <td class="text-red">${formatMoney(monto)}</td>
+                            <td>${item.vencimiento || '-'}</td>
+                            <td>
+                                <span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="togglePaid(${item.id}, ${item.pagado})">
+                                    ${item.pagado ? 'PAGADO' : 'POR PAGAR'}
+                                </span>
+                            </td>
+                            <td style="text-align: right;">
+                                <button class="btn-action-sm btn-edit-sm" onclick="editItem(${item.id})">✏️</button>
+                                <button class="btn-action-sm btn-danger-sm" onclick="deleteItem(${item.id})">✕</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            const columnHtml = `
+                <div class="card-sub-column">
+                    <div class="card-sub-header">
+                        <span class="card-sub-title">${group.title}</span>
+                        <strong class="text-red">${formatMoney(subTotal)}</strong>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Consumo</th>
+                                    <th>Monto</th>
+                                    <th>Venc.</th>
+                                    <th>Estado</th>
+                                    <th style="text-align: right;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${tableRowsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            wrapper.innerHTML += columnHtml;
         });
-
-        document.getElementById('card-tab-total').innerText = formatMoney(totalCard);
     }
 
     function renderTables() {
