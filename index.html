@@ -491,7 +491,7 @@
             <h2 class="text-green" id="modal-income-title">➕ Nuevo Ingreso</h2>
             <button class="close-modal" onclick="closeModal('modal-income')">&times;</button>
         </div>
-        <form id="form-income">
+        <form id="form-income" onsubmit="saveIncome(event)">
             <input type="hidden" id="income-id">
             <div class="modal-body">
                 <div class="form-group"><label>Detalle</label><input type="text" id="income-detail" required></div>
@@ -513,7 +513,7 @@
             <h2 class="text-red" id="modal-expense-title">➖ Nuevo Gasto</h2>
             <button class="close-modal" onclick="closeModal('modal-expense')">&times;</button>
         </div>
-        <form id="form-expense">
+        <form id="form-expense" onsubmit="saveExpense(event)">
             <input type="hidden" id="expense-id">
             <div class="modal-body">
                 <div class="form-group">
@@ -546,7 +546,7 @@
             <h2 class="text-blue" id="modal-card-title">💳 Cargar Gasto en Tarjeta</h2>
             <button class="close-modal" onclick="closeModal('modal-card')">&times;</button>
         </div>
-        <form id="form-card">
+        <form id="form-card" onsubmit="saveCardExpense(event)">
             <input type="hidden" id="card-id">
             <div class="modal-body">
                 <div class="form-group">
@@ -757,458 +757,407 @@
         renderCardSection();
     }
 
+    /* ❌ MODIFICADO: RENDER DE TABLA EN DETALLE ESPECÍFICO SIN COLUMNA DE ESTADO NI BOTÓN DE CAMBIO DE ESTADO */
     function renderCardTableRows(itemsList) {
         if (itemsList.length === 0) {
-            return `<tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 12px;">Sin gastos registrados</td></tr>`;
+            return `<tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Sin consumos registrados</td></tr>`;
         }
-        let rows = '';
-        itemsList.forEach(item => {
-            const monto = Number(item.monto);
-            const titularStr = item.titular ? ` (${item.titular})` : '';
-
-            rows += `
-                <tr>
-                    <td><strong>${item.detalle}</strong>${titularStr}</td>
-                    <td class="text-red">${formatMoney(monto)}</td>
-                    <td>${item.vencimiento || '-'}</td>
-                    <td>
-                        <span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="togglePaid(${item.id}, ${item.pagado})">
-                            ${item.pagado ? 'PAGADO' : 'POR PAGAR'}
-                        </span>
-                    </td>
-                    <td style="text-align: right;">
-                        <button class="btn-action-sm btn-edit-sm" onclick="editItem(${item.id})">✏️</button>
-                        <button class="btn-action-sm btn-danger-sm" onclick="deleteItem(${item.id})">✕</button>
-                    </td>
-                </tr>
-            `;
-        });
-        return rows;
+        return itemsList.map(item => `
+            <tr>
+                <td>${item.detalle}</td>
+                <td><strong>${formatMoney(item.monto)}</strong></td>
+                <td>${item.vencimiento || '-'}</td>
+                <td style="text-align: right;">
+                    <button class="btn-action-sm btn-edit-sm" onclick="editCardItem('${item.id}')">✏️</button>
+                    <button class="btn-action-sm btn-danger-sm" onclick="deleteItem('${item.id}')">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
     }
 
     function renderCardSection() {
-        document.getElementById('card-tab-title').innerText = `Gastos ${currentCardSelected}`;
         const wrapper = document.getElementById('card-columns-wrapper');
+        const title = document.getElementById('card-tab-title');
+        const totalSpan = document.getElementById('card-tab-total');
+        
+        title.innerText = `Gastos ${currentCardSelected}`;
+        const cardItems = monthItems.filter(i => i.categoria === currentCardSelected);
+        const total = cardItems.reduce((acc, i) => acc + Number(i.monto), 0);
+        totalSpan.innerText = formatMoney(total);
+
         wrapper.innerHTML = '';
 
-        const cardExpenses = monthItems.filter(i => i.tipo === 'EXPENSE' && i.categoria === currentCardSelected);
-        const totalBank = cardExpenses.reduce((sum, item) => sum + Number(item.monto), 0);
-        document.getElementById('card-tab-total').innerText = formatMoney(totalBank);
-
-        let subGroups = [];
         if (currentCardSelected === 'Tarjeta BBVA') {
-            subGroups = [
-                { title: '💳 BBVA Visa', typeKey: 'Visa', splitByHolder: false },
-                { title: '💳 BBVA Mastercard', typeKey: 'Mastercard', splitByHolder: true }
-            ];
-        } else if (currentCardSelected === 'Tarjeta Galicia') {
-            subGroups = [
-                { title: '💳 Galicia Visa', typeKey: 'Visa', splitByHolder: false },
-                { title: '💳 Galicia American Express', typeKey: 'American Express', splitByHolder: false }
-            ];
-        } else {
-            subGroups = [
-                { title: '💳 Tarjeta ICBC (General)', typeKey: null, splitByHolder: false }
-            ];
-        }
+            const holders = ['Iván', 'Adri'];
+            const types = ['Visa', 'Mastercard'];
 
-        subGroups.forEach(group => {
-            let filteredItems = group.typeKey ? cardExpenses.filter(i => i.tipo_tarjeta === group.typeKey) : cardExpenses;
-            const subTotal = filteredItems.reduce((sum, item) => sum + Number(item.monto), 0);
+            holders.forEach(holder => {
+                types.forEach(type => {
+                    const filtered = cardItems.filter(i => i.titular === holder && i.tipo_tarjeta === type);
+                    const subTotal = filtered.reduce((acc, i) => acc + Number(i.monto), 0);
 
-            let contentHtml = '';
-
-            if (group.splitByHolder) {
-                const itemsIvan = filteredItems.filter(i => i.titular === 'Iván');
-                const itemsAdri = filteredItems.filter(i => i.titular === 'Adri');
-                const itemsOtros = filteredItems.filter(i => i.titular !== 'Iván' && i.titular !== 'Adri');
-
-                contentHtml += `
-                    <div class="holder-subgroup-title">👤 Gastos Iván</div>
-                    <div class="table-container" style="margin-bottom: 12px;">
-                        <table>
-                            <thead>
-                                <tr><th>Consumo</th><th>Monto</th><th>Venc.</th><th>Estado</th><th style="text-align: right;">Acciones</th></tr>
-                            </thead>
-                            <tbody>${renderCardTableRows(itemsIvan)}</tbody>
-                        </table>
-                    </div>
-
-                    <div class="holder-subgroup-title">👤 Gastos Adri</div>
-                    <div class="table-container">
-                        <table>
-                            <thead>
-                                <tr><th>Consumo</th><th>Monto</th><th>Venc.</th><th>Estado</th><th style="text-align: right;">Acciones</th></tr>
-                            </thead>
-                            <tbody>${renderCardTableRows(itemsAdri)}</tbody>
-                        </table>
-                    </div>
-                `;
-
-                if (itemsOtros.length > 0) {
-                    contentHtml += `
-                        <div class="holder-subgroup-title" style="margin-top: 12px;">👤 Sin Titular / Otros</div>
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr><th>Consumo</th><th>Monto</th><th>Venc.</th><th>Estado</th><th style="text-align: right;">Acciones</th></tr>
-                                </thead>
-                                <tbody>${renderCardTableRows(itemsOtros)}</tbody>
-                            </table>
+                    const col = document.createElement('div');
+                    col.className = 'card-sub-column';
+                    col.innerHTML = `
+                        <div class="card-sub-header">
+                            <div>
+                                <div class="holder-subgroup-title">Titular: ${holder}</div>
+                                <div class="card-sub-title">BBVA ${type}</div>
+                            </div>
+                            <div style="font-weight:700;" class="text-red">${formatMoney(subTotal)}</div>
                         </div>
-                    `;
-                }
-            } else {
-                contentHtml = `
-                    <div class="table-container">
                         <table>
                             <thead>
-                                <tr><th>Consumo</th><th>Monto</th><th>Venc.</th><th>Estado</th><th style="text-align: right;">Acciones</th></tr>
+                                <tr>
+                                    <th>Detalle</th>
+                                    <th>Monto</th>
+                                    <th>Venc.</th>
+                                    <th style="text-align: right;">Acciones</th>
+                                </tr>
                             </thead>
-                            <tbody>${renderCardTableRows(filteredItems)}</tbody>
+                            <tbody>${renderCardTableRows(filtered)}</tbody>
                         </table>
-                    </div>
-                `;
-            }
+                    `;
+                    wrapper.appendChild(col);
+                });
+            });
+        } else if (currentCardSelected === 'Tarjeta Galicia') {
+            const types = ['Visa', 'American Express'];
+            types.forEach(type => {
+                const filtered = cardItems.filter(i => i.tipo_tarjeta === type);
+                const subTotal = filtered.reduce((acc, i) => acc + Number(i.monto), 0);
 
-            const columnHtml = `
-                <div class="card-sub-column">
+                const col = document.createElement('div');
+                col.className = 'card-sub-column';
+                col.innerHTML = `
                     <div class="card-sub-header">
-                        <span class="card-sub-title">${group.title}</span>
-                        <strong class="text-red">${formatMoney(subTotal)}</strong>
+                        <div class="card-sub-title">Galicia ${type}</div>
+                        <div style="font-weight:700;" class="text-red">${formatMoney(subTotal)}</div>
                     </div>
-                    ${contentHtml}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Detalle</th>
+                                <th>Monto</th>
+                                <th>Venc.</th>
+                                <th style="text-align: right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>${renderCardTableRows(filtered)}</tbody>
+                    </table>
+                `;
+                wrapper.appendChild(col);
+            });
+        } else {
+            const subTotal = cardItems.reduce((acc, i) => acc + Number(i.monto), 0);
+            const col = document.createElement('div');
+            col.className = 'card-sub-column';
+            col.innerHTML = `
+                <div class="card-sub-header">
+                    <div class="card-sub-title">Resumen Consolidado ICBC</div>
+                    <div style="font-weight:700;" class="text-red">${formatMoney(subTotal)}</div>
                 </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Detalle</th>
+                            <th>Monto</th>
+                            <th>Venc.</th>
+                            <th style="text-align: right;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>${renderCardTableRows(cardItems)}</tbody>
+                </table>
             `;
-            wrapper.innerHTML += columnHtml;
-        });
+            wrapper.appendChild(col);
+        }
     }
 
     function renderTables() {
         const ingresosBody = document.getElementById('ingresos-body');
         const gastosBody = document.getElementById('gastos-body');
+        const filterCat = document.getElementById('filter-cat').value;
+
+        let totalInc = 0, totalCobrar = 0, totalExp = 0, totalPagar = 0;
+
         ingresosBody.innerHTML = '';
         gastosBody.innerHTML = '';
 
-        let totalIngresos = 0, totalCobrar = 0, totalGastos = 0, totalPagar = 0;
-        const catFilter = document.getElementById('filter-cat').value;
+        const incomeItems = monthItems.filter(i => i.tipo === 'INCOME');
+        incomeItems.forEach(item => {
+            const amount = Number(item.monto);
+            totalInc += amount;
+            if (!item.pagado) totalCobrar += amount;
 
-        // Render Ingresos
-        monthItems.filter(i => i.tipo === 'INCOME').forEach(item => {
-            const monto = Number(item.monto);
-            totalIngresos += monto;
-            if (!item.pagado) totalCobrar += monto;
-
-            ingresosBody.innerHTML += `
-                <tr>
-                    <td><strong>${item.detalle}</strong></td>
-                    <td class="text-green">${formatMoney(monto)}</td>
-                    <td>${item.vencimiento || '-'}</td>
-                    <td><span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="togglePaid(${item.id}, ${item.pagado})">${item.pagado ? 'COBRADO' : 'POR COBRAR'}</span></td>
-                    <td style="text-align: right;">
-                        <button class="btn-action-sm btn-edit-sm" onclick="editItem(${item.id})">✏️</button>
-                        <button class="btn-action-sm btn-danger-sm" onclick="deleteItem(${item.id})">✕</button>
-                    </td>
-                </tr>`;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.detalle}</td>
+                <td><strong>${formatMoney(amount)}</strong></td>
+                <td>${item.vencimiento || '-'}</td>
+                <td>
+                    <span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="toggleStatus('${item.id}', ${!item.pagado})">
+                        ${item.pagado ? 'Cobrado' : 'Pendiente'}
+                    </span>
+                </td>
+                <td style="text-align: right;">
+                    <button class="btn-action-sm btn-edit-sm" onclick="editIncome('${item.id}')">✏️</button>
+                    <button class="btn-action-sm btn-danger-sm" onclick="deleteItem('${item.id}')">🗑️</button>
+                </td>
+            `;
+            ingresosBody.appendChild(tr);
         });
 
-        // Totales de gastos
-        const allExpenses = monthItems.filter(i => i.tipo === 'EXPENSE');
-        allExpenses.forEach(i => {
-            totalGastos += Number(i.monto);
-            if (!i.pagado) totalPagar += Number(i.monto);
+        let expenseItems = monthItems.filter(i => i.tipo === 'EXPENSE');
+        expenseItems.forEach(i => {
+            const amount = Number(i.monto);
+            totalExp += amount;
+            if (!i.pagado) totalPagar += amount;
         });
 
-        const cardCategories = ["Tarjeta BBVA", "Tarjeta ICBC", "Tarjeta Galicia"];
-        const categoriesOrder = ["Gastos Ivan", "Gastos Adri", "Gastos Casa", ...cardCategories];
-
-        categoriesOrder.forEach(category => {
-            if (catFilter !== 'ALL' && catFilter !== category) return;
-
-            const categoryItems = allExpenses.filter(i => i.categoria === category);
-            if (categoryItems.length === 0) return;
-
-            let catSubtotal = categoryItems.reduce((sum, item) => sum + Number(item.monto), 0);
-            const isCardCategory = cardCategories.includes(category);
-
-            if (isCardCategory) {
-                const allPaid = categoryItems.every(i => i.pagado);
-
-                gastosBody.innerHTML += `
-                    <tr class="card-summary-row">
-                        <td><span class="cat-tag">${category}</span></td>
-                        <td><strong>Resumen Resumido (${categoryItems.length} consumos)</strong></td>
-                        <td class="text-red"><strong>${formatMoney(catSubtotal)}</strong></td>
-                        <td>-</td>
-                        <td>
-                            <span class="badge ${allPaid ? 'badge-paid' : 'badge-pending'}">
-                                ${allPaid ? 'PAGADO TOTAL' : 'POR PAGAR'}
-                            </span>
-                        </td>
-                        <td style="text-align: right; color: var(--text-muted); font-size: 0.75rem;">Ver abajo detalle</td>
-                    </tr>
-                `;
-            } else {
-                gastosBody.innerHTML += `
-                    <tr class="category-group-row">
-                        <td colspan="2">📌 ${category}</td>
-                        <td class="text-red">${formatMoney(catSubtotal)}</td>
-                        <td colspan="3"></td>
-                    </tr>
-                `;
-
-                categoryItems.forEach(item => {
-                    const monto = Number(item.monto);
-                    gastosBody.innerHTML += `
-                        <tr>
-                            <td><span class="cat-tag">${item.categoria}</span></td>
-                            <td>${item.detalle}</td>
-                            <td>${formatMoney(monto)}</td>
-                            <td>${item.vencimiento || '-'}</td>
-                            <td><span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="togglePaid(${item.id}, ${item.pagado})">${item.pagado ? 'PAGADO' : 'POR PAGAR'}</span></td>
-                            <td style="text-align: right;">
-                                <button class="btn-action-sm btn-edit-sm" onclick="editItem(${item.id})">✏️</button>
-                                <button class="btn-action-sm btn-danger-sm" onclick="deleteItem(${item.id})">✕</button>
-                            </td>
-                        </tr>`;
-                });
-            }
-        });
-
-        const diff = totalIngresos - totalGastos;
-        document.getElementById('total-ingresos').innerText = formatMoney(totalIngresos);
-        document.getElementById('total-cobrar').innerText = formatMoney(totalCobrar);
-        document.getElementById('total-gastos').innerText = formatMoney(totalGastos);
-        document.getElementById('total-pagar').innerText = formatMoney(totalPagar);
-        const difEl = document.getElementById('total-diferencia');
-        difEl.innerText = formatMoney(diff);
-        difEl.className = `amount ${diff >= 0 ? 'text-green' : 'text-red'}`;
-    }
-
-    function renderCharts() {
-        const catTotals = {
-            "Gastos Ivan": 0,
-            "Gastos Adri": 0,
-            "Gastos Casa": 0,
-            "Tarjeta BBVA": 0,
-            "Tarjeta ICBC": 0,
-            "Tarjeta Galicia": 0
-        };
-        let pagadoTotal = 0, pendienteTotal = 0, ingresos10 = 0, gastos10 = 0;
-
-        monthItems.forEach(item => {
-            const monto = Number(item.monto);
-            let day = item.dia || (item.vencimiento && item.vencimiento.includes('/') ? parseInt(item.vencimiento.split('/')[0]) : 31);
-
-            if (item.tipo === 'INCOME') {
-                if (day <= 10) ingresos10 += monto;
-            } else {
-                if (catTotals[item.categoria] !== undefined) catTotals[item.categoria] += monto;
-                item.pagado ? pagadoTotal += monto : pendienteTotal += monto;
-                if (day <= 10) gastos10 += monto;
-            }
-        });
-
-        const ctxTen = document.getElementById('firstTenDaysChart').getContext('2d');
-        if (firstTenDaysChart) firstTenDaysChart.destroy();
-        firstTenDaysChart = new Chart(ctxTen, {
-            type: 'bar',
-            data: { labels: ['Ingresos', 'Gastos'], datasets: [{ data: [ingresos10, gastos10], backgroundColor: ['#10b981', '#ef4444'] }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-        });
-
-        const ctxCat = document.getElementById('categoryChart').getContext('2d');
-        if (categoryChart) categoryChart.destroy();
-        categoryChart = new Chart(ctxCat, {
-            type: 'doughnut',
-            data: { 
-                labels: ['Iván', 'Adri', 'Casa', 'BBVA', 'ICBC', 'Galicia'], 
-                datasets: [{ data: Object.values(catTotals), backgroundColor: ['#3b82f6', '#ec4899', '#10b981', '#0ea5e9', '#f59e0b', '#8b5cf6'] }] 
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-        });
-
-        const ctxStatus = document.getElementById('statusChart').getContext('2d');
-        if (statusChart) statusChart.destroy();
-        statusChart = new Chart(ctxStatus, {
-            type: 'bar',
-            data: { labels: ['Pagado', 'Pendiente'], datasets: [{ data: [pagadoTotal, pendienteTotal], backgroundColor: ['#10b981', '#f59e0b'] }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-        });
-    }
-
-    async function togglePaid(id, currentPaid) {
-        await db.from('movimientos').update({ pagado: !currentPaid }).eq('id', id);
-        fetchMonthData();
-    }
-
-    function editItem(id) {
-        const item = monthItems.find(i => i.id === id);
-        if (!item) return;
-
-        const cardCategories = ["Tarjeta BBVA", "Tarjeta ICBC", "Tarjeta Galicia"];
-
-        if (item.tipo === 'INCOME') {
-            document.getElementById('income-id').value = item.id;
-            document.getElementById('income-detail').value = item.detalle;
-            document.getElementById('income-amount').value = item.monto;
-            document.getElementById('income-venc').value = item.vencimiento || '';
-            document.getElementById('modal-income-title').innerText = '✏️ Editar Ingreso';
-            openModal('modal-income', false);
-        } else if (cardCategories.includes(item.categoria)) {
-            // Edición completa de Tarjeta de Crédito
-            document.getElementById('card-id').value = item.id;
-            document.getElementById('modal-card-title').innerText = '✏️ Editar Gasto de Tarjeta';
-            document.getElementById('card-select').value = item.categoria;
-            updateCardFormFields();
-
-            if (item.titular) document.getElementById('card-holder').value = item.titular;
-            if (item.tipo_tarjeta) document.getElementById('card-type').value = item.tipo_tarjeta;
-
-            document.getElementById('card-detail').value = item.detalle;
-            document.getElementById('card-amount').value = item.monto;
-            document.getElementById('card-venc').value = item.vencimiento || '';
-            document.getElementById('group-card-installments').style.display = 'none';
-
-            openModal('modal-card', false);
-        } else {
-            document.getElementById('expense-id').value = item.id;
-            document.getElementById('expense-cat').value = item.categoria;
-            document.getElementById('expense-detail').value = item.detalle;
-            document.getElementById('expense-amount').value = item.monto;
-            document.getElementById('expense-venc').value = item.vencimiento || '';
-            document.getElementById('modal-expense-title').innerText = '✏️ Editar Gasto';
-            openModal('modal-expense', false);
+        if (filterCat !== 'ALL') {
+            expenseItems = expenseItems.filter(i => i.categoria === filterCat);
         }
+
+        expenseItems.forEach(item => {
+            const amount = Number(item.monto);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><span class="cat-tag">${item.categoria}</span></td>
+                <td>${item.detalle}</td>
+                <td><strong>${formatMoney(amount)}</strong></td>
+                <td>${item.vencimiento || '-'}</td>
+                <td>
+                    <!-- ✅ CAMBIO DE ESTADO DISPONIBLE EN LA TABLA DE GASTOS GENERALES Y AGRUPADOS -->
+                    <span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="toggleStatus('${item.id}', ${!item.pagado})">
+                        ${item.pagado ? 'Pagado' : 'Pendiente'}
+                    </span>
+                </td>
+                <td style="text-align: right;">
+                    <button class="btn-action-sm btn-edit-sm" onclick="editExpense('${item.id}')">✏️</button>
+                    <button class="btn-action-sm btn-danger-sm" onclick="deleteItem('${item.id}')">🗑️</button>
+                </td>
+            `;
+            gastosBody.appendChild(tr);
+        });
+
+        document.getElementById('total-ingresos').innerText = formatMoney(totalInc);
+        document.getElementById('total-cobrar').innerText = formatMoney(totalCobrar);
+        document.getElementById('total-gastos').innerText = formatMoney(totalExp);
+        document.getElementById('total-pagar').innerText = formatMoney(totalPagar);
+
+        const diff = totalInc - totalExp;
+        const diffElem = document.getElementById('total-diferencia');
+        diffElem.innerText = formatMoney(diff);
+        diffElem.className = `amount ${diff >= 0 ? 'text-green' : 'text-red'}`;
+    }
+
+    async function toggleStatus(id, newStatus) {
+        const { error } = await db.from('movimientos').update({ pagado: newStatus }).eq('id', id);
+        if (!error) await fetchMonthData();
     }
 
     async function deleteItem(id) {
-        if (confirm("¿Estás seguro de eliminar este registro?")) {
-            await db.from('movimientos').delete().eq('id', id);
-            fetchMonthData();
+        if (confirm('¿Deseas eliminar este registro?')) {
+            const { error } = await db.from('movimientos').delete().eq('id', id);
+            if (!error) await fetchMonthData();
         }
     }
 
-    document.getElementById('form-income').addEventListener('submit', async function(e) {
+    async function saveIncome(e) {
         e.preventDefault();
         const id = document.getElementById('income-id').value;
-        const venc = document.getElementById('income-venc').value || '-';
-        const dia = venc.includes('/') ? parseInt(venc.split('/')[0]) : 31;
-
-        const record = {
+        const payload = {
             mes: currentMonth,
             tipo: 'INCOME',
+            categoria: 'Ingresos',
             detalle: document.getElementById('income-detail').value,
             monto: parseFloat(document.getElementById('income-amount').value),
-            vencimiento: venc,
-            dia: dia
+            vencimiento: document.getElementById('income-venc').value,
+            pagado: false
         };
 
         if (id) {
-            await db.from('movimientos').update(record).eq('id', id);
+            delete payload.pagado;
+            await db.from('movimientos').update(payload).eq('id', id);
         } else {
-            record.pagado = false;
-            await db.from('movimientos').insert([record]);
+            await db.from('movimientos').insert([payload]);
         }
-
         closeModal('modal-income');
-        this.reset();
-        fetchMonthData();
-    });
+        await fetchMonthData();
+    }
 
-    document.getElementById('form-expense').addEventListener('submit', async function(e) {
+    async function saveExpense(e) {
         e.preventDefault();
         const id = document.getElementById('expense-id').value;
-        const venc = document.getElementById('expense-venc').value || '-';
-        const dia = venc.includes('/') ? parseInt(venc.split('/')[0]) : 31;
-
-        const record = {
+        const payload = {
             mes: currentMonth,
             tipo: 'EXPENSE',
             categoria: document.getElementById('expense-cat').value,
             detalle: document.getElementById('expense-detail').value,
             monto: parseFloat(document.getElementById('expense-amount').value),
-            vencimiento: venc,
-            dia: dia
+            vencimiento: document.getElementById('expense-venc').value,
+            pagado: false
         };
 
         if (id) {
-            await db.from('movimientos').update(record).eq('id', id);
+            delete payload.pagado;
+            await db.from('movimientos').update(payload).eq('id', id);
         } else {
-            record.pagado = false;
-            await db.from('movimientos').insert([record]);
+            await db.from('movimientos').insert([payload]);
         }
-
         closeModal('modal-expense');
-        this.reset();
-        fetchMonthData();
-    });
+        await fetchMonthData();
+    }
 
-    document.getElementById('form-card').addEventListener('submit', async function(e) {
+    async function saveCardExpense(e) {
         e.preventDefault();
         const id = document.getElementById('card-id').value;
-        const venc = document.getElementById('card-venc').value || '-';
-        const dia = venc.includes('/') ? parseInt(venc.split('/')[0]) : 31;
-        const cardCategory = document.getElementById('card-select').value;
-        const installmentAmount = parseFloat(document.getElementById('card-amount').value);
-        const detailBase = document.getElementById('card-detail').value;
-
-        let titularVal = null;
-        let cardTypeVal = null;
-
-        if (cardCategory === 'Tarjeta BBVA') {
-            titularVal = document.getElementById('card-holder').value;
-            cardTypeVal = document.getElementById('card-type').value;
-        } else if (cardCategory === 'Tarjeta Galicia') {
-            cardTypeVal = document.getElementById('card-type').value;
-        }
+        const cardSelected = document.getElementById('card-select').value;
+        const detail = document.getElementById('card-detail').value;
+        const amount = parseFloat(document.getElementById('card-amount').value);
+        const venc = document.getElementById('card-venc').value;
+        const holder = document.getElementById('card-holder').value;
+        const type = document.getElementById('card-type').value;
+        const installments = parseInt(document.getElementById('card-installments').value);
 
         if (id) {
-            // Edición de un registro de tarjeta individual existente
-            const updateRecord = {
-                categoria: cardCategory,
-                detalle: detailBase,
-                monto: parseFloat(installmentAmount.toFixed(2)),
+            const payload = {
+                categoria: cardSelected,
+                detalle: detail,
+                monto: amount,
                 vencimiento: venc,
-                dia: dia,
-                titular: titularVal,
-                tipo_tarjeta: cardTypeVal
+                titular: cardSelected === 'Tarjeta BBVA' ? holder : null,
+                tipo_tarjeta: (cardSelected === 'Tarjeta BBVA' || cardSelected === 'Tarjeta Galicia') ? type : null
             };
-            await db.from('movimientos').update(updateRecord).eq('id', id);
+            await db.from('movimientos').update(payload).eq('id', id);
         } else {
-            // Creación de consumo nuevo (con opción de cuotas)
-            const installments = parseInt(document.getElementById('card-installments').value);
-            const currentMonthIndex = monthsList.indexOf(currentMonth);
-            let recordsToInsert = [];
+            const startIndex = monthsList.indexOf(currentMonth);
+            const itemsToInsert = [];
 
             for (let i = 0; i < installments; i++) {
-                const targetMonthIndex = currentMonthIndex + i;
-                if (targetMonthIndex >= monthsList.length) break;
+                const monthIdx = (startIndex + i) % 12;
+                const targetMonth = monthsList[monthIdx];
+                const detailText = installments > 1 ? `${detail} (${i + 1}/${installments})` : detail;
 
-                const targetMonth = monthsList[targetMonthIndex];
-                const detailText = installments > 1 ? `${detailBase} (${i + 1}/${installments})` : detailBase;
-
-                recordsToInsert.push({
+                itemsToInsert.push({
                     mes: targetMonth,
                     tipo: 'EXPENSE',
-                    categoria: cardCategory,
+                    categoria: cardSelected,
                     detalle: detailText,
-                    monto: parseFloat(installmentAmount.toFixed(2)),
+                    monto: amount,
                     vencimiento: venc,
-                    dia: dia,
-                    pagado: false,
-                    titular: titularVal,
-                    tipo_tarjeta: cardTypeVal
+                    titular: cardSelected === 'Tarjeta BBVA' ? holder : null,
+                    tipo_tarjeta: (cardSelected === 'Tarjeta BBVA' || cardSelected === 'Tarjeta Galicia') ? type : null,
+                    pagado: false
                 });
             }
-
-            await db.from('movimientos').insert(recordsToInsert);
+            await db.from('movimientos').insert(itemsToInsert);
         }
 
         closeModal('modal-card');
-        this.reset();
-        fetchMonthData();
-    });
+        await fetchMonthData();
+    }
+
+    function editIncome(id) {
+        const item = monthItems.find(i => i.id == id);
+        if (!item) return;
+        document.getElementById('income-id').value = item.id;
+        document.getElementById('income-detail').value = item.detalle;
+        document.getElementById('income-amount').value = item.monto;
+        document.getElementById('income-venc').value = item.vencimiento || '';
+        document.getElementById('modal-income-title').innerText = '✏️ Editar Ingreso';
+        openModal('modal-income', false);
+    }
+
+    function editExpense(id) {
+        const item = monthItems.find(i => i.id == id);
+        if (!item) return;
+        document.getElementById('expense-id').value = item.id;
+        document.getElementById('expense-cat').value = item.categoria;
+        document.getElementById('expense-detail').value = item.detalle;
+        document.getElementById('expense-amount').value = item.monto;
+        document.getElementById('expense-venc').value = item.vencimiento || '';
+        document.getElementById('modal-expense-title').innerText = '✏️ Editar Gasto';
+        openModal('modal-expense', false);
+    }
+
+    function editCardItem(id) {
+        const item = monthItems.find(i => i.id == id);
+        if (!item) return;
+
+        document.getElementById('card-id').value = item.id;
+        document.getElementById('card-select').value = item.categoria;
+        updateCardFormFields();
+
+        if (item.categoria === 'Tarjeta BBVA') document.getElementById('card-holder').value = item.titular || 'Iván';
+        if (item.categoria === 'Tarjeta BBVA' || item.categoria === 'Tarjeta Galicia') document.getElementById('card-type').value = item.tipo_tarjeta || '';
+
+        document.getElementById('card-detail').value = item.detalle;
+        document.getElementById('card-amount').value = item.monto;
+        document.getElementById('card-venc').value = item.vencimiento || '';
+        document.getElementById('group-card-installments').style.display = 'none';
+        document.getElementById('modal-card-title').innerText = '✏️ Editar Cuota / Gasto Tarjeta';
+
+        openModal('modal-card', false);
+    }
+
+    function renderCharts() {
+        const expenses = monthItems.filter(i => i.tipo === 'EXPENSE');
+
+        // 1. Gráfico primeros 10 días
+        const earlyExpenses = expenses.filter(i => {
+            if (!i.vencimiento) return false;
+            const dayMatch = i.vencimiento.match(/^(\d+)/);
+            return dayMatch && parseInt(dayMatch[1]) <= 10;
+        });
+
+        const earlyTotal = earlyExpenses.reduce((acc, i) => acc + Number(i.monto), 0);
+        const restTotal = expenses.reduce((acc, i) => acc + Number(i.monto), 0) - earlyTotal;
+
+        if (firstTenDaysChart) firstTenDaysChart.destroy();
+        const ctx1 = document.getElementById('firstTenDaysChart').getContext('2d');
+        firstTenDaysChart = new Chart(ctx1, {
+            type: 'doughnut',
+            data: {
+                labels: ['Días 1 al 10', 'Resto del mes'],
+                datasets: [{ data: [earlyTotal, restTotal], backgroundColor: ['#f59e0b', '#cbd5e1'] }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // 2. Gráfico Categorías
+        const categories = {};
+        expenses.forEach(i => categories[i.categoria] = (categories[i.categoria] || 0) + Number(i.monto));
+
+        if (categoryChart) categoryChart.destroy();
+        const ctx2 = document.getElementById('categoryChart').getContext('2d');
+        categoryChart = new Chart(ctx2, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(categories),
+                datasets: [{
+                    data: Object.values(categories),
+                    backgroundColor: ['#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#f59e0b']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        // 3. Gráfico Estado de Pagos
+        let paid = 0, pending = 0;
+        expenses.forEach(i => i.pagado ? paid += Number(i.monto) : pending += Number(i.monto));
+
+        if (statusChart) statusChart.destroy();
+        const ctx3 = document.getElementById('statusChart').getContext('2d');
+        statusChart = new Chart(ctx3, {
+            type: 'doughnut',
+            data: {
+                labels: ['Pagado', 'Pendiente'],
+                datasets: [{ data: [paid, pending], backgroundColor: ['#10b981', '#ef4444'] }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
 
     fetchHomeSummary();
 </script>
