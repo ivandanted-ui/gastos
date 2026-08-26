@@ -293,17 +293,9 @@
         th, td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
         th { background-color: rgba(0,0,0,0.02); color: var(--text-muted); }
 
-        .category-group-row td {
-            background-color: var(--card-credit-bg);
-            font-weight: 700;
-            color: var(--primary);
-            font-size: 0.9rem;
-            border-top: 2px solid var(--border);
-        }
-
         .card-summary-row td {
-            font-weight: 600;
-            background-color: rgba(37, 99, 235, 0.03);
+            font-weight: 700;
+            background-color: rgba(37, 99, 235, 0.05);
         }
 
         .badge {
@@ -312,6 +304,7 @@
             font-size: 0.72rem;
             font-weight: 700;
             cursor: pointer;
+            display: inline-block;
         }
         .badge-paid { background-color: #d1fae5; color: #047857; }
         .badge-pending { background-color: #fee2e2; color: #b91c1c; }
@@ -620,6 +613,7 @@
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const monthsList = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    const cardCategories = ["Tarjeta BBVA", "Tarjeta ICBC", "Tarjeta Galicia"];
     let currentMonth = "";
     let monthItems = [];
     let currentCardSelected = "Tarjeta BBVA";
@@ -735,6 +729,7 @@
         currentMonth = monthName;
         document.getElementById('month-title').innerText = `${currentMonth} 2026`;
         document.getElementById('view-home').classList.remove('active');
+        document.getElementById('view-month').classList.active = false;
         document.getElementById('view-month').classList.add('active');
         await fetchMonthData();
     }
@@ -757,7 +752,6 @@
         renderCardSection();
     }
 
-    /* ❌ MODIFICADO: RENDER DE TABLA EN DETALLE ESPECÍFICO SIN COLUMNA DE ESTADO NI BOTÓN DE CAMBIO DE ESTADO */
     function renderCardTableRows(itemsList) {
         if (itemsList.length === 0) {
             return `<tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Sin consumos registrados</td></tr>`;
@@ -883,6 +877,7 @@
         ingresosBody.innerHTML = '';
         gastosBody.innerHTML = '';
 
+        // Render Ingresos
         const incomeItems = monthItems.filter(i => i.tipo === 'INCOME');
         incomeItems.forEach(item => {
             const amount = Number(item.monto);
@@ -907,18 +902,27 @@
             ingresosBody.appendChild(tr);
         });
 
-        let expenseItems = monthItems.filter(i => i.tipo === 'EXPENSE');
-        expenseItems.forEach(i => {
+        // Totales generales de gastos
+        const allExpenseItems = monthItems.filter(i => i.tipo === 'EXPENSE');
+        allExpenseItems.forEach(i => {
             const amount = Number(i.monto);
             totalExp += amount;
             if (!i.pagado) totalPagar += amount;
         });
 
+        // Separar gastos normales y tarjetas
+        let normalExpenses = allExpenseItems.filter(i => !cardCategories.includes(i.categoria));
+        
         if (filterCat !== 'ALL') {
-            expenseItems = expenseItems.filter(i => i.categoria === filterCat);
+            if (cardCategories.includes(filterCat)) {
+                normalExpenses = [];
+            } else {
+                normalExpenses = normalExpenses.filter(i => i.categoria === filterCat);
+            }
         }
 
-        expenseItems.forEach(item => {
+        // Render Gastos Normales
+        normalExpenses.forEach(item => {
             const amount = Number(item.monto);
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -927,7 +931,6 @@
                 <td><strong>${formatMoney(amount)}</strong></td>
                 <td>${item.vencimiento || '-'}</td>
                 <td>
-                    <!-- ✅ CAMBIO DE ESTADO DISPONIBLE EN LA TABLA DE GASTOS GENERALES Y AGRUPADOS -->
                     <span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="toggleStatus('${item.id}', ${!item.pagado})">
                         ${item.pagado ? 'Pagado' : 'Pendiente'}
                     </span>
@@ -938,6 +941,37 @@
                 </td>
             `;
             gastosBody.appendChild(tr);
+        });
+
+        // ✅ FILAS AGRUPADAS DE TARJETAS EN LA TABLA DE GASTOS GENERALES
+        cardCategories.forEach(cardCat => {
+            if (filterCat === 'ALL' || filterCat === cardCat) {
+                const cardItems = allExpenseItems.filter(i => i.categoria === cardCat);
+                if (cardItems.length > 0) {
+                    const cardTotal = cardItems.reduce((acc, i) => acc + Number(i.monto), 0);
+                    const allPaid = cardItems.every(i => i.pagado);
+                    const vencStr = cardItems[0]?.vencimiento || '-';
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'card-summary-row';
+                    tr.innerHTML = `
+                        <td><span class="cat-tag" style="background:var(--primary); color:white;">${cardCat}</span></td>
+                        <td><strong>Resumen Consolidado ${cardCat}</strong> (${cardItems.length} consumos)</td>
+                        <td><strong class="text-red">${formatMoney(cardTotal)}</strong></td>
+                        <td>${vencStr}</td>
+                        <td>
+                            <!-- ✅ MARCAR PAGADO/PENDIENTE EL RESUMEN COMPLETO DE LA TARJETA -->
+                            <span class="badge ${allPaid ? 'badge-paid' : 'badge-pending'}" onclick="toggleGroupCardStatus('${cardCat}', ${!allPaid})">
+                                ${allPaid ? 'Resumen Pagado' : 'Resumen Pendiente'}
+                            </span>
+                        </td>
+                        <td style="text-align: right; font-size: 0.75rem; color: var(--text-muted);">
+                            Ver abajo
+                        </td>
+                    `;
+                    gastosBody.appendChild(tr);
+                }
+            }
         });
 
         document.getElementById('total-ingresos').innerText = formatMoney(totalInc);
@@ -953,6 +987,16 @@
 
     async function toggleStatus(id, newStatus) {
         const { error } = await db.from('movimientos').update({ pagado: newStatus }).eq('id', id);
+        if (!error) await fetchMonthData();
+    }
+
+    /* ✅ NUEVA FUNCIÓN: CAMBIAR ESTADO A TODOS LOS GASTOS DE UNA TARJETA DE UN SOLO CLIC */
+    async function toggleGroupCardStatus(cardCategory, newStatus) {
+        const { error } = await db.from('movimientos')
+            .update({ pagado: newStatus })
+            .eq('mes', currentMonth)
+            .eq('categoria', cardCategory);
+            
         if (!error) await fetchMonthData();
     }
 
