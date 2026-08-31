@@ -400,12 +400,15 @@
 
         .card-type-header {
             background: rgba(0, 0, 0, 0.02);
-            padding: 6px 20px 6px 40px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-muted);
+            padding: 8px 20px 8px 40px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-main);
             border-bottom: 1px solid var(--border);
             text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         /* BADGES & BOTONES DANGER */
@@ -437,6 +440,25 @@
         }
         .btn-danger-outline:hover {
             background: var(--danger);
+            color: white;
+        }
+
+        .btn-warning-outline {
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: var(--warning);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-warning-outline:hover {
+            background: var(--warning);
             color: white;
         }
 
@@ -682,8 +704,6 @@
             <div id="view-home" class="view-section active">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
                     <p style="color: var(--text-muted);">Selecciona un mes para gestionar tus finanzas:</p>
-                    
-                    <!-- CAMBIO: BOTÓN PARA BORRAR TODOS LOS INGRESOS DE TODOS LOS MESES -->
                     <button class="btn-danger-outline" onclick="deleteAllIncomesGlobal()">
                         <span>⚠️ Borrar Todos los Ingresos (Todos los meses)</span>
                     </button>
@@ -694,10 +714,21 @@
             <!-- VISTA DEL MES SELECCIONADO -->
             <div id="view-month" class="view-section">
                 
-                <div style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
                     <button onclick="showHome()" style="background:none; border:none; color:var(--primary); font-size:1rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px;">
                         ‹ Volver a Meses
                     </button>
+
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-warning-outline" onclick="openModalAlerts()">
+                            <span>🔔 Configurar Alertas Vencimiento</span>
+                        </button>
+
+                        <!-- CAMBIO 1: BOTÓN PARA BORRAR TODOS LOS DATOS DEL MES -->
+                        <button class="btn-danger-outline" onclick="deleteAllMonthData()">
+                            <span>💥 Borrar Todo el Mes</span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- ACCIONES RÁPIDAS -->
@@ -748,10 +779,8 @@
                     <div class="panel-box">
                         <div class="panel-header text-green">
                             <span>💰 Ingresos del Mes</span>
-                            
-                            <!-- CAMBIO: BOTÓN BORRAR INGRESOS DEL MES -->
                             <button class="btn-danger-outline" style="padding: 4px 8px; font-size: 0.75rem;" onclick="deleteAllIncomesCurrentMonth()">
-                                🗑️ Borrar Todos
+                                🗑️ Borrar Ingresos
                             </button>
                         </div>
                         <div id="ingresos-list"></div>
@@ -848,7 +877,7 @@
     </div>
 </div>
 
-<!-- MODAL GASTO EN TARJETA -->
+<!-- MODAL GASTO EN TARJETA (CON SOPORTE PARA USD) -->
 <div class="modal-overlay" id="modal-card">
     <div class="modal">
         <div class="modal-header">
@@ -877,10 +906,26 @@
                 <select id="card-type"></select>
             </div>
             <div class="form-group"><label>Detalle</label><input type="text" id="card-detail" placeholder="Ej: Compra Electrónica" required></div>
+
+            <!-- CAMBIO 2: MONEDA Y CONSUMO EN DÓLARES -->
             <div class="form-group">
-                <label>Monto Total de la Compra ($)</label>
+                <label>Moneda del Consumo</label>
+                <select id="card-currency" onchange="toggleUsdFields()">
+                    <option value="ARS">Peso Argentino (ARS $)</option>
+                    <option value="USD">Dólares (USD $)</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="usd-rate-group" style="display: none;">
+                <label>Cotización Dólar ($ ARS por USD)</label>
+                <input type="number" step="0.01" id="card-usd-rate" placeholder="Ej: 1200" oninput="calculateInstallmentAmount()">
+            </div>
+
+            <div class="form-group">
+                <label id="lbl-total-amount">Monto Total de la Compra ($ ARS)</label>
                 <input type="number" step="0.01" id="card-total-amount" placeholder="0.00" oninput="calculateInstallmentAmount()" required>
             </div>
+
             <div class="form-group" id="group-card-installments">
                 <label>Cantidad de Cuotas (1 a 24)</label>
                 <select id="card-installments" onchange="calculateInstallmentAmount()"></select>
@@ -891,6 +936,52 @@
             <div class="form-group" style="margin-top: 12px;"><label>Fecha Vencimiento Cuota 1</label><input type="date" id="card-venc" required></div>
             <button type="submit" class="btn-submit" style="background: var(--primary);">Guardar Gasto Tarjeta</button>
         </form>
+    </div>
+</div>
+
+<!-- CAMBIO 4: MODAL DE CONFIGURACIÓN Y NOTIFICACIONES DE VENCIMIENTO -->
+<div class="modal-overlay" id="modal-alerts">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="text-blue">🔔 Notificaciones de Vencimiento</h3>
+            <button class="close-modal" onclick="closeModal('modal-alerts')">✕</button>
+        </div>
+        <div style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 16px;">
+            Configura las fechas límite y tus datos para recibir recordatorios de vencimiento por WhatsApp o Mail.
+        </div>
+
+        <div class="form-group">
+            <label>Número de WhatsApp (con código de país)</label>
+            <input type="text" id="alert-phone" placeholder="Ej: 5491112345678">
+        </div>
+        <div class="form-group">
+            <label>Correo Electrónico</label>
+            <input type="email" id="alert-email" placeholder="ejemplo@correo.com">
+        </div>
+
+        <hr style="border: none; border-top: 1px solid var(--border); margin: 16px 0;">
+
+        <div style="font-weight: 700; margin-bottom: 12px; font-size: 0.9rem;">Día fijado de vencimiento mensual por tarjeta:</div>
+
+        <div class="form-group">
+            <label>BBVA (Día del mes)</label>
+            <input type="number" min="1" max="31" id="due-bbva" placeholder="Ej: 10">
+        </div>
+        <div class="form-group">
+            <label>ICBC (Día del mes)</label>
+            <input type="number" min="1" max="31" id="due-icbc" placeholder="Ej: 15">
+        </div>
+        <div class="form-group">
+            <label>Galicia (Día del mes)</label>
+            <input type="number" min="1" max="31" id="due-galicia" placeholder="Ej: 20">
+        </div>
+
+        <button onclick="saveAlertConfig()" class="btn-submit" style="background: var(--primary); margin-bottom: 16px;">
+            💾 Guardar Configuración
+        </button>
+
+        <div style="font-weight: 700; margin-bottom: 8px; font-size: 0.9rem;">Acciones de Alertas Rápidas:</div>
+        <div id="alert-actions-wrapper" style="display: flex; flex-direction: column; gap: 8px;"></div>
     </div>
 </div>
 
@@ -926,6 +1017,21 @@
 
     function toggleCharts() {
         document.getElementById('charts-wrapper').classList.toggle('visible');
+    }
+
+    function toggleUsdFields() {
+        const currency = document.getElementById('card-currency').value;
+        const usdGroup = document.getElementById('usd-rate-group');
+        const lbl = document.getElementById('lbl-total-amount');
+
+        if (currency === 'USD') {
+            usdGroup.style.display = 'flex';
+            lbl.innerText = 'Monto Total de la Compra en Dólares (USD $)';
+        } else {
+            usdGroup.style.display = 'none';
+            lbl.innerText = 'Monto Total de la Compra ($ ARS)';
+        }
+        calculateInstallmentAmount();
     }
 
     function openModalIncomeForCreate() {
@@ -970,6 +1076,8 @@
     function openModalCardForCreate() {
         document.getElementById('form-card').reset();
         document.getElementById('card-id').value = '';
+        document.getElementById('card-currency').value = 'ARS';
+        toggleUsdFields();
         document.getElementById('modal-card-title').innerText = '💳 Cargar Gasto en Tarjeta';
         document.getElementById('card-select').value = currentCardSelected !== 'ALL' ? currentCardSelected : 'Tarjeta BBVA';
         document.getElementById('group-card-installments').style.display = 'flex';
@@ -979,10 +1087,23 @@
     }
 
     function calculateInstallmentAmount() {
-        const total = parseFloat(document.getElementById('card-total-amount').value) || 0;
+        const currency = document.getElementById('card-currency').value;
+        const totalRaw = parseFloat(document.getElementById('card-total-amount').value) || 0;
+        const usdRate = parseFloat(document.getElementById('card-usd-rate').value) || 0;
+
+        let totalInArs = totalRaw;
+        if (currency === 'USD') {
+            totalInArs = totalRaw * usdRate;
+        }
+
         const installments = parseInt(document.getElementById('card-installments').value) || 1;
-        const perInstallment = total / installments;
-        document.getElementById('installment-hint').innerText = `Valor por cuota: ${formatMoney(perInstallment)} (${installments} cuota${installments > 1 ? 's' : ''})`;
+        const perInstallment = totalInArs / installments;
+
+        let hint = `Valor por cuota: ${formatMoney(perInstallment)} (${installments} cuota${installments > 1 ? 's' : ''})`;
+        if (currency === 'USD' && usdRate > 0) {
+            hint += ` | Total en USD: $${totalRaw.toFixed(2)} (Cotización: $${usdRate})`;
+        }
+        document.getElementById('installment-hint').innerText = hint;
     }
 
     function openModal(id, resetForm = true) {
@@ -1095,7 +1216,7 @@
         renderCardSection();
     }
 
-    // CAMBIO: RENDER AGRUPADO POR TARJETA/BANCO -> TITULAR -> TIPO DE TARJETA
+    // CAMBIO 3: MOSTRAR EL TOTAL DE CONSUMOS POR TIPO DE TARJETA (VISA, MASTERCARD, AMEX, ETC.)
     function renderCardSection() {
         const wrapper = document.getElementById('card-details-wrapper');
         let cardItems = monthItems.filter(i => cardCategories.includes(i.categoria));
@@ -1111,7 +1232,6 @@
             return;
         }
 
-        // 1. Agrupar por Banco / Tarjeta
         const groupedByBank = {};
         cardItems.forEach(item => {
             if (!groupedByBank[item.categoria]) groupedByBank[item.categoria] = [];
@@ -1124,7 +1244,6 @@
             bankHeader.innerText = `🏦 ${bank}`;
             wrapper.appendChild(bankHeader);
 
-            // 2. Agrupar por Titular
             const groupedByHolder = {};
             groupedByBank[bank].forEach(item => {
                 const holderKey = item.titular ? `Titular: ${item.titular}` : 'Titular Principal / General';
@@ -1138,7 +1257,6 @@
                 holderHeader.innerText = `👤 ${holder}`;
                 wrapper.appendChild(holderHeader);
 
-                // 3. Agrupar por Tipo de Tarjeta (Visa, Mastercard, Amex, etc.)
                 const groupedByType = {};
                 groupedByHolder[holder].forEach(item => {
                     const typeKey = item.tipo_tarjeta ? `Tarjeta ${item.tipo_tarjeta}` : 'Consumos Generales';
@@ -1147,14 +1265,18 @@
                 });
 
                 Object.keys(groupedByType).forEach(cardType => {
-                    if (cardType !== 'Consumos Generales') {
-                        const typeHeader = document.createElement('div');
-                        typeHeader.className = 'card-type-header';
-                        typeHeader.innerText = `💳 ${cardType}`;
-                        wrapper.appendChild(typeHeader);
-                    }
+                    const itemsInType = groupedByType[cardType];
+                    const cardTypeTotal = itemsInType.reduce((sum, item) => sum + Number(item.monto), 0);
 
-                    groupedByType[cardType].forEach(item => {
+                    const typeHeader = document.createElement('div');
+                    typeHeader.className = 'card-type-header';
+                    typeHeader.innerHTML = `
+                        <span>💳 ${cardType}</span>
+                        <span class="text-red">Total ${cardType}: ${formatMoney(cardTypeTotal)}</span>
+                    `;
+                    wrapper.appendChild(typeHeader);
+
+                    itemsInType.forEach(item => {
                         const div = document.createElement('div');
                         div.className = 'data-item';
                         div.innerHTML = `
@@ -1184,7 +1306,6 @@
         ingresosList.innerHTML = '';
         gastosList.innerHTML = '';
 
-        // Render Ingresos
         const incomeItems = monthItems.filter(i => i.tipo === 'INCOME');
         if (incomeItems.length === 0) {
             ingresosList.innerHTML = `<div style="text-align:center; font-size:0.85rem; color:var(--text-muted); padding:16px;">Sin ingresos registrados en este mes</div>`;
@@ -1213,7 +1334,6 @@
             ingresosList.appendChild(div);
         });
 
-        // Totales generales de gastos
         const allExpenseItems = monthItems.filter(i => i.tipo === 'EXPENSE');
         allExpenseItems.forEach(i => {
             const amount = Number(i.monto);
@@ -1309,7 +1429,26 @@
         }
     }
 
-    // CAMBIO: FUNCIONALIDAD PARA BORRAR TODOS LOS INGRESOS GLOBALMENTE
+    // CAMBIO 1: FUNCIONALIDAD PARA BORRAR TODOS LOS DATOS DEL MES ACTUAL (INGRESOS Y GASTOS)
+    async function deleteAllMonthData() {
+        if (!currentMonth) return;
+
+        const confirmFirst = confirm(`⚠️ ¿Estás seguro de que deseas eliminar TODOS los datos (Ingresos y Gastos) de ${currentMonth}?`);
+        if (!confirmFirst) return;
+
+        const confirmSecond = confirm(`Esta acción borrará completamente el mes de ${currentMonth}. ¿Deseas continuar?`);
+        if (!confirmSecond) return;
+
+        const { error } = await db.from('movimientos').delete().eq('mes', currentMonth);
+
+        if (error) {
+            alert('Error al borrar los datos del mes: ' + error.message);
+        } else {
+            alert(`Todos los datos del mes de ${currentMonth} han sido eliminados.`);
+            await fetchMonthData();
+        }
+    }
+
     async function deleteAllIncomesGlobal() {
         const confirmFirst = confirm('⚠️ ¿Estás seguro de que deseas eliminar TODOS los ingresos de TODOS los meses?');
         if (!confirmFirst) return;
@@ -1326,7 +1465,6 @@
         }
     }
 
-    // CAMBIO: FUNCIONALIDAD PARA BORRAR TODOS LOS INGRESOS DEL MES ACTUAL
     async function deleteAllIncomesCurrentMonth() {
         if (!currentMonth) return;
         
@@ -1419,17 +1557,26 @@
         await fetchMonthData();
     }
 
+    // CAMBIO 2: GUARDAR GASTO TARJETA Y SOPORTE CONVERSIÓN USD -> ARS
     async function saveCardExpense(e) {
         e.preventDefault();
         const cardSelected = document.getElementById('card-select').value;
-        const detail = document.getElementById('card-detail').value;
-        const totalAmount = parseFloat(document.getElementById('card-total-amount').value);
+        let detail = document.getElementById('card-detail').value;
+        const currency = document.getElementById('card-currency').value;
+        const rawAmount = parseFloat(document.getElementById('card-total-amount').value);
+        const usdRate = parseFloat(document.getElementById('card-usd-rate').value) || 0;
         const venc = document.getElementById('card-venc').value;
         const holder = document.getElementById('card-holder').value;
         const type = document.getElementById('card-type').value;
         const installments = parseInt(document.getElementById('card-installments').value);
 
-        const installmentAmount = totalAmount / installments;
+        let totalInArs = rawAmount;
+        if (currency === 'USD') {
+            totalInArs = rawAmount * usdRate;
+            detail += ` (USD $${rawAmount.toFixed(2)} @ $${usdRate})`;
+        }
+
+        const installmentAmount = totalInArs / installments;
         const startIndex = monthsList.indexOf(currentMonth);
         const itemsToInsert = [];
 
@@ -1450,6 +1597,69 @@
         await db.from('movimientos').insert(itemsToInsert);
         closeModal('modal-card');
         await fetchMonthData();
+    }
+
+    // CAMBIO 4: SISTEMA DE ALERTAS Y RECORDATORIOS
+    function openModalAlerts() {
+        document.getElementById('alert-phone').value = localStorage.getItem('cfg_phone') || '';
+        document.getElementById('alert-email').value = localStorage.getItem('cfg_email') || '';
+        document.getElementById('due-bbva').value = localStorage.getItem('cfg_due_bbva') || '10';
+        document.getElementById('due-icbc').value = localStorage.getItem('cfg_due_icbc') || '15';
+        document.getElementById('due-galicia').value = localStorage.getItem('cfg_due_galicia') || '20';
+        
+        renderAlertActions();
+        openModal('modal-alerts', false);
+    }
+
+    function saveAlertConfig() {
+        localStorage.setItem('cfg_phone', document.getElementById('alert-phone').value);
+        localStorage.setItem('cfg_email', document.getElementById('alert-email').value);
+        localStorage.setItem('cfg_due_bbva', document.getElementById('due-bbva').value);
+        localStorage.setItem('cfg_due_icbc', document.getElementById('due-icbc').value);
+        localStorage.setItem('cfg_due_galicia', document.getElementById('due-galicia').value);
+        alert('Configuración guardada.');
+        renderAlertActions();
+    }
+
+    function renderAlertActions() {
+        const container = document.getElementById('alert-actions-wrapper');
+        container.innerHTML = '';
+
+        const phone = localStorage.getItem('cfg_phone');
+        const email = localStorage.getItem('cfg_email');
+
+        cardCategories.forEach(card => {
+            const key = card === 'Tarjeta BBVA' ? 'bbva' : card === 'Tarjeta ICBC' ? 'icbc' : 'galicia';
+            const day = localStorage.getItem(`cfg_due_${key}`) || '10';
+            
+            const cardExpenses = monthItems.filter(i => i.categoria === card);
+            const totalPending = cardExpenses.filter(i => !i.pagado).reduce((acc, i) => acc + Number(i.monto), 0);
+
+            const div = document.createElement('div');
+            div.style.padding = '10px';
+            div.style.border = '1px solid var(--border)';
+            div.style.borderRadius = '10px';
+            div.style.background = 'var(--input-bg)';
+
+            let msg = `Hola! Recordatorio de vencimiento de ${card} el día ${day} de ${currentMonth}. Total pendiente: ${formatMoney(totalPending)}.`;
+
+            let buttons = '';
+            if (phone) {
+                const waUrl = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg)}`;
+                buttons += `<a href="${waUrl}" target="_blank" style="text-decoration:none; display:inline-block; padding:6px 10px; background:#25D366; color:white; border-radius:6px; font-size:0.75rem; font-weight:700;">💬 Enviar WhatsApp</a> `;
+            }
+            if (email) {
+                const mailUrl = `mailto:${email}?subject=${encodeURIComponent('Vencimiento ' + card)}&body=${encodeURIComponent(msg)}`;
+                buttons += `<a href="${mailUrl}" style="text-decoration:none; display:inline-block; padding:6px 10px; background:#2563eb; color:white; border-radius:6px; font-size:0.75rem; font-weight:700;">✉️ Enviar Email</a>`;
+            }
+
+            div.innerHTML = `
+                <div style="font-weight:700; font-size:0.85rem;">${card} (Vence el ${day})</div>
+                <div style="font-size:0.8rem; color:var(--text-muted); margin:4px 0;">Monto Pendiente: ${formatMoney(totalPending)}</div>
+                <div style="margin-top:6px;">${buttons || '<span style="font-size:0.75rem; color:var(--text-muted);">Ingresa teléfono/email arriba para activar accesos rápidos.</span>'}</div>
+            `;
+            container.appendChild(div);
+        });
     }
 
     function renderCharts() {
