@@ -2,607 +2,634 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control Financiero Anual - Iván & Adri</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>App Financiera - iOS Style</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --bg-color: #f8fafc;
+            --bg-body: #0f172a;
+            --iphone-bg: #f2f2f7;
             --card-bg: #ffffff;
-            --primary: #2563eb;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --info: #0ea5e9;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --input-bg: #ffffff;
-            --card-credit-bg: #f1f5f9;
+            --primary: #007aff;
+            --success: #34c759;
+            --danger: #ff3b30;
+            --warning: #ff9500;
+            --info: #5856d6;
+            --text-main: #000000;
+            --text-muted: #8e8e93;
+            --border: #e5e5ea;
+            --input-bg: #e9e9eb;
+            --card-credit-bg: #f9f9fb;
+            --ios-radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
         body.dark-theme {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --primary: #3b82f6;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --info: #38bdf8;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: #334155;
-            --input-bg: #0f172a;
-            --card-credit-bg: #0f172a;
+            --iphone-bg: #000000;
+            --card-bg: #1c1c1e;
+            --primary: #0a84ff;
+            --success: #30d158;
+            --danger: #ff453a;
+            --warning: #ffd60a;
+            --info: #5e5ce6;
+            --text-main: #ffffff;
+            --text-muted: #8e8e93;
+            --border: #38383a;
+            --input-bg: #2c2c2e;
+            --card-credit-bg: #1c1c1e;
         }
 
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-body);
             color: var(--text-main);
             margin: 0;
-            padding: 16px;
-            transition: background-color 0.3s, color 0.3s;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
 
-        .container { max-width: 1280px; margin: 0 auto; }
-
-        header {
+        /* IPHONE 17 CONTAINER FRAME */
+        .iphone-frame {
+            width: 100%;
+            max-width: 393px;
+            height: 100vh;
+            max-height: 852px;
+            background-color: var(--iphone-bg);
+            border-radius: 48px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 12px #1e293b;
+            position: relative;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
+            transition: var(--transition);
+        }
+
+        /* DYNAMIC ISLAND / NOTCH */
+        .dynamic-island {
+            position: absolute;
+            top: 11px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 35px;
+            background-color: #000;
+            border-radius: 20px;
+            z-index: 9999;
+            transition: var(--transition);
+        }
+
+        /* STATUS BAR HEADER */
+        .status-header {
+            padding-top: 50px;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
             align-items: center;
-            text-align: center;
-            margin-bottom: 24px;
-            position: relative;
+            background: var(--iphone-bg);
+            z-index: 10;
+        }
+
+        .header-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
         }
 
         .theme-toggle-btn {
-            position: absolute;
-            top: 0;
-            right: 0;
             background: var(--card-bg);
             border: 1px solid var(--border);
             color: var(--text-main);
-            padding: 8px 12px;
-            border-radius: 20px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
             cursor: pointer;
-            font-size: 0.9rem;
             display: flex;
             align-items: center;
-            gap: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            justify-content: center;
+            font-size: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s active;
+        }
+        .theme-toggle-btn:active { transform: scale(0.9); }
+
+        /* SCROLLABLE MAIN CONTENT AREA */
+        .app-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 16px 90px 16px;
+            scroll-behavior: smooth;
         }
 
-        h1 { margin: 0 0 6px 0; font-size: 1.8rem; font-weight: 700; text-align: center; }
-        .subtitle { color: var(--text-muted); font-size: 0.95rem; text-align: center; }
+        .app-content::-webkit-scrollbar { display: none; }
 
-        .view-section { display: none; }
-        .view-section.active { display: block; }
+        /* VIEWS TRANSITIONS */
+        .view-section {
+            display: none;
+            opacity: 0;
+            transform: scale(0.96);
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
 
+        .view-section.active {
+            display: block;
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* HOME MONTHS GRID */
         .months-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 16px;
-            margin-top: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 12px;
         }
 
         .month-card {
             background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
+            border-radius: var(--ios-radius);
+            padding: 16px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            transition: var(--transition);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            min-height: 150px;
+            height: 130px;
+            border: 1px solid var(--border);
         }
 
-        .month-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.12);
-            border-color: var(--primary);
+        .month-card:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         }
 
-        .month-card h2 { margin: 0 0 12px 0; font-size: 1.3rem; color: var(--primary); text-align: center; }
+        .month-card h2 { margin: 0; font-size: 1.1rem; color: var(--primary); font-weight: 700; }
+        .month-summary-row { display: flex; justify-content: space-between; font-size: 0.78rem; margin-top: 4px; color: var(--text-muted); }
 
-        .month-summary {
-            font-size: 0.88rem;
-            color: var(--text-muted);
+        /* ACTION BUTTONS */
+        .action-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .btn-action-icon {
+            background: var(--card-bg);
+            border-radius: var(--ios-radius);
+            padding: 10px 4px;
+            border: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            gap: 6px;
-        }
-
-        .month-summary-row { display: flex; justify-content: space-between; }
-
-        .btn-back {
-            background-color: var(--border);
-            color: var(--text-main);
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.7rem;
             font-weight: 600;
+            color: var(--text-main);
             cursor: pointer;
-            margin-bottom: 12px;
+            transition: var(--transition);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
 
-        .action-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-
-        .btn-action {
+        .btn-action-icon:active { transform: scale(0.92); }
+        .btn-action-icon .icon-circle {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 12px 20px;
+            justify-content: center;
+            font-size: 1rem;
+            color: white;
+        }
+
+        /* METRICS CAROUSEL */
+        .summary-carousel {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+        }
+        .summary-carousel::-webkit-scrollbar { display: none; }
+
+        .card-metric {
+            min-width: 125px;
+            background: var(--card-bg);
+            padding: 12px;
+            border-radius: var(--ios-radius);
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            flex: 1;
+        }
+        .card-metric h3 { margin: 0; font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); }
+        .card-metric .amount { font-size: 1.05rem; font-weight: 700; margin-top: 4px; }
+
+        /* TABLES & LISTS iOS STYLE */
+        .ios-list-container {
+            background: var(--card-bg);
+            border-radius: var(--ios-radius);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .ios-list-header {
+            padding: 12px 14px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ios-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+        .ios-item:last-child { border-bottom: none; }
+        .ios-item-info { display: flex; flex-direction: column; gap: 2px; }
+        .ios-item-title { font-size: 0.88rem; font-weight: 600; }
+        .ios-item-sub { font-size: 0.72rem; color: var(--text-muted); }
+
+        /* BADGES */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s active;
+        }
+        .badge:active { transform: scale(0.9); }
+        .badge-paid { background-color: rgba(52, 199, 89, 0.15); color: var(--success); }
+        .badge-pending { background-color: rgba(255, 59, 48, 0.15); color: var(--danger); }
+
+        /* TABS DE TARJETAS */
+        .card-tabs {
+            display: flex;
+            background: var(--input-bg);
+            padding: 3px;
+            border-radius: 10px;
+            margin-bottom: 14px;
+        }
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 6px 0;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .tab-btn.active {
+            background: var(--card-bg);
+            color: var(--text-main);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        /* MODAL BOTTOM-SHEET iOS STYLE */
+        .modal-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            z-index: 10000;
+        }
+
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+
+        .modal {
+            background: var(--card-bg);
+            width: 100%;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 20px;
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.15, 0.9, 0.34, 1);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.active .modal { transform: translateY(0); }
+        .modal-handle {
+            width: 36px;
+            height: 5px;
+            background: var(--border);
+            border-radius: 3px;
+            margin: 0 auto 14px auto;
+        }
+
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .close-modal { background: var(--input-bg); border: none; font-size: 1rem; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; color: var(--text-muted); }
+
+        .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+        .form-group label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+        input, select {
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            background: var(--input-bg);
+            color: var(--text-main);
+            outline: none;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            border-radius: 14px;
+            border: none;
             font-size: 1rem;
             font-weight: 700;
-            border-radius: 10px;
-            border: none;
+            color: white;
             cursor: pointer;
-            flex: 1;
-            justify-content: center;
-            min-width: 160px;
+            margin-top: 8px;
+            transition: transform 0.15s active;
+        }
+        .btn-submit:active { transform: scale(0.98); }
+
+        /* BOTTOM NAVBAR iOS */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: 12px;
+            z-index: 100;
         }
 
-        .btn-income { background-color: var(--success); color: white; }
-        .btn-expense { background-color: var(--danger); color: white; }
-        .btn-card { background-color: var(--primary); color: white; }
-        .btn-toggle-charts { background-color: var(--info); color: white; }
-
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px;
-            margin-bottom: 24px;
+        body.dark-theme .bottom-nav {
+            background: rgba(28, 28, 30, 0.85);
         }
 
-        .card {
-            background: var(--card-bg);
-            padding: 16px;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            border: 1px solid var(--border);
-            text-align: center;
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            border: none;
+            background: none;
         }
-
-        .card h3 { margin: 0 0 6px 0; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); }
-        .card .amount { font-size: 1.3rem; font-weight: 700; }
+        .nav-item.active { color: var(--primary); font-weight: 600; }
+        .nav-icon { font-size: 1.3rem; }
 
         .text-green { color: var(--success); }
         .text-red { color: var(--danger); }
-        .text-orange { color: var(--warning); }
-        .text-blue { color: var(--info); }
+        .text-blue { color: var(--primary); }
 
-        .credit-cards-section {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
-            margin-top: 28px;
-            margin-bottom: 28px;
-        }
-
-        .card-tabs {
-            display: flex;
-            gap: 8px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 12px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-        }
-
-        .tab-btn {
-            background: var(--card-credit-bg);
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .tab-btn.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        .card-columns-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px;
-        }
-
-        .card-sub-column {
-            background: var(--card-credit-bg);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .card-sub-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--border);
-            padding-bottom: 8px;
-        }
-
-        .card-sub-title {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--primary);
-        }
-
-        .holder-subgroup-title {
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: var(--text-muted);
-            margin: 4px 0;
-            text-transform: uppercase;
-        }
-
-        .charts-wrapper {
-            display: none;
-            margin-bottom: 28px;
-        }
-
-        .charts-wrapper.visible {
-            display: block;
-        }
-
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 16px;
-        }
-
-        .chart-card {
-            background: var(--card-bg);
-            padding: 16px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            height: 300px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .chart-card h3 { margin: 0 0 12px 0; font-size: 0.9rem; text-align: center; }
-        .chart-container { position: relative; width: 100%; height: 100%; }
-
-        .tables-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
-        .section-title { font-size: 1.2rem; font-weight: 700; margin: 0; }
-
-        .table-container {
-            background: var(--card-bg);
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            overflow-x: auto;
-        }
-
-        table { width: 100%; border-collapse: collapse; font-size: 0.88rem; text-align: left; }
-        th, td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
-        th { background-color: rgba(0,0,0,0.02); color: var(--text-muted); }
-
-        .card-summary-row td {
-            font-weight: 700;
-            background-color: rgba(37, 99, 235, 0.05);
-        }
-
-        .badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: inline-block;
-        }
-        .badge-paid { background-color: #d1fae5; color: #047857; }
-        .badge-pending { background-color: #fee2e2; color: #b91c1c; }
-
-        .cat-tag {
-            font-weight: 600;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.72rem;
-            background: var(--border);
-            color: var(--text-main);
-        }
-
-        .btn-action-sm { padding: 4px 8px; font-size: 0.75rem; border: none; border-radius: 6px; cursor: pointer; }
-        .btn-edit-sm { background-color: var(--warning); color: white; margin-right: 4px; }
-        .btn-danger-sm { background-color: var(--danger); color: white; }
-
-        .filter-controls select { padding: 6px 10px; font-size: 0.85rem; border: 1px solid var(--border); border-radius: 8px; background: var(--card-bg); color: var(--text-main); }
-
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.6);
-            display: flex; justify-content: center; align-items: center;
-            opacity: 0; visibility: hidden; transition: all 0.2s; z-index: 1000;
-        }
-        .modal-overlay.active { opacity: 1; visibility: visible; }
-        .modal { background: var(--card-bg); color: var(--text-main); padding: 20px; border-radius: 16px; width: 90%; max-width: 440px; border: 1px solid var(--border); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .close-modal { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-main); }
-        .modal-body { display: flex; flex-direction: column; gap: 12px; }
-        .form-group { display: flex; flex-direction: column; gap: 4px; }
-        .form-group label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
-        input, select { padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; background: var(--input-bg); color: var(--text-main); }
-        .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+        .charts-wrapper { display: none; margin-bottom: 20px; }
+        .charts-wrapper.visible { display: block; }
+        .chart-card { background: var(--card-bg); padding: 12px; border-radius: var(--ios-radius); border: 1px solid var(--border); height: 220px; margin-bottom: 12px; }
+        .chart-card h3 { margin: 0 0 8px 0; font-size: 0.8rem; text-align: center; color: var(--text-muted); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <header>
-        <button class="theme-toggle-btn" onclick="toggleTheme()">
-            <span id="theme-icon">🌙</span> <span id="theme-text">Modo Oscuro</span>
-        </button>
-    </header>
+<div class="iphone-frame">
+    <!-- Dynamic Island -->
+    <div class="dynamic-island"></div>
 
-    <!-- VISTA PRINCIPAL -->
-    <div id="view-home" class="view-section active">
-        <header>
-            <h1>Gestión Financiera Anual</h1>
-            <div class="subtitle">Selecciona un mes para gestionar tus finanzas</div>
-        </header>
-        <div class="months-grid" id="months-container"></div>
+    <!-- Header / Status Bar simulated -->
+    <div class="status-header">
+        <div class="header-title" id="app-header-title">Finanzas</div>
+        <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-btn">🌙</button>
     </div>
 
-    <!-- VISTA DEL MES -->
-    <div id="view-month" class="view-section">
-        <header>
-            <button class="btn-back" onclick="showHome()">← Volver a Meses</button>
-            <h1 id="month-title">Mes</h1>
-            <div class="subtitle">Iván & Adri</div>
-        </header>
+    <!-- Content Area -->
+    <div class="app-content">
 
-        <div class="action-bar">
-            <button class="btn-action btn-income" onclick="openModal('modal-income')">➕ Ingreso</button>
-            <button class="btn-action btn-expense" onclick="openModal('modal-expense')">➖ Gasto General</button>
-            <button class="btn-action btn-card" onclick="openModalCardForCreate()">💳 Cargar Gasto en Tarjeta</button>
-            <button class="btn-action btn-toggle-charts" onclick="toggleCharts()">📊 Mostrar / Ocultar Gráficos</button>
+        <!-- VISTA HOME -->
+        <div id="view-home" class="view-section active">
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">Selecciona un mes</div>
+            <div class="months-grid" id="months-container"></div>
         </div>
 
-        <div class="summary-grid">
-            <div class="card"><h3>Ingresos Total</h3><div class="amount text-green" id="total-ingresos">$0</div></div>
-            <div class="card"><h3>Por Cobrar</h3><div class="amount text-blue" id="total-cobrar">$0</div></div>
-            <div class="card"><h3>Gastos Total</h3><div class="amount text-red" id="total-gastos">$0</div></div>
-            <div class="card"><h3>Por Pagar</h3><div class="amount text-orange" id="total-pagar">$0</div></div>
-            <div class="card"><h3>Balance Neto</h3><div class="amount" id="total-diferencia">$0</div></div>
-        </div>
+        <!-- VISTA DEL MES -->
+        <div id="view-month" class="view-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <button onclick="showHome()" style="background:none; border:none; color:var(--primary); font-size:0.9rem; font-weight:600; cursor:pointer; padding:0;">‹ Meses</button>
+                <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">Iván & Adri</span>
+            </div>
 
-        <!-- CONTENEDOR DE GRÁFICOS -->
-        <div class="charts-wrapper" id="charts-wrapper">
-            <div class="charts-grid">
+            <!-- BOTONES DE ACCIÓN RÁPIDA -->
+            <div class="action-bar">
+                <div class="btn-action-icon" onclick="openModal('modal-income')">
+                    <div class="icon-circle" style="background: var(--success);">+</div>
+                    <span>Ingreso</span>
+                </div>
+                <div class="btn-action-icon" onclick="openModal('modal-expense')">
+                    <div class="icon-circle" style="background: var(--danger);">-</div>
+                    <span>Gasto</span>
+                </div>
+                <div class="btn-action-icon" onclick="openModalCardForCreate()">
+                    <div class="icon-circle" style="background: var(--primary);">💳</div>
+                    <span>Tarjeta</span>
+                </div>
+                <div class="btn-action-icon" onclick="toggleCharts()">
+                    <div class="icon-circle" style="background: var(--info);">📊</div>
+                    <span>Gráficos</span>
+                </div>
+            </div>
+
+            <!-- CAROUSEL DE METRICAS -->
+            <div class="summary-carousel">
+                <div class="card-metric"><h3>Ingresos</h3><div class="amount text-green" id="total-ingresos">$0</div></div>
+                <div class="card-metric"><h3>Por Cobrar</h3><div class="amount text-blue" id="total-cobrar">$0</div></div>
+                <div class="card-metric"><h3>Gastos Total</h3><div class="amount text-red" id="total-gastos">$0</div></div>
+                <div class="card-metric"><h3>Por Pagar</h3><div class="amount text-red" id="total-pagar">$0</div></div>
+                <div class="card-metric"><h3>Balance</h3><div class="amount" id="total-diferencia">$0</div></div>
+            </div>
+
+            <!-- SECCIÓN GRÁFICOS DESPLEGABLES -->
+            <div class="charts-wrapper" id="charts-wrapper">
                 <div class="chart-card">
-                    <h3>Primeros 10 días</h3>
-                    <div class="chart-container"><canvas id="firstTenDaysChart"></canvas></div>
+                    <h3>Gastos primeros 10 días</h3>
+                    <div style="height: 170px;"><canvas id="firstTenDaysChart"></canvas></div>
                 </div>
                 <div class="chart-card">
                     <h3>Gastos por Categoría</h3>
-                    <div class="chart-container"><canvas id="categoryChart"></canvas></div>
-                </div>
-                <div class="chart-card">
-                    <h3>Estado de Pagos</h3>
-                    <div class="chart-container"><canvas id="statusChart"></canvas></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TABLAS PRINCIPALES -->
-        <div class="tables-grid">
-            <div>
-                <div class="section-header">
-                    <h2 class="section-title text-green">💰 Ingresos</h2>
-                </div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Detalle</th>
-                                <th>Monto</th>
-                                <th>Venc.</th>
-                                <th>Estado</th>
-                                <th style="text-align: right;">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ingresos-body"></tbody>
-                    </table>
+                    <div style="height: 170px;"><canvas id="categoryChart"></canvas></div>
                 </div>
             </div>
 
-            <div>
-                <div class="section-header">
-                    <h2 class="section-title text-red">💸 Todos los Gastos del Mes</h2>
-                    <div class="filter-controls">
-                        <select id="filter-cat" onchange="renderTables()">
-                            <option value="ALL">Todas las categorías</option>
-                            <option value="Gastos Ivan">Gastos Iván</option>
-                            <option value="Gastos Adri">Gastos Adri</option>
-                            <option value="Gastos Casa">Gastos Casa</option>
-                            <option value="Tarjeta BBVA">Tarjeta BBVA</option>
-                            <option value="Tarjeta ICBC">Tarjeta ICBC</option>
-                            <option value="Tarjeta Galicia">Tarjeta Galicia</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Cat.</th>
-                                <th>Detalle</th>
-                                <th>Monto Total</th>
-                                <th>Venc.</th>
-                                <th>Estado</th>
-                                <th style="text-align: right;">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="gastos-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- SECCIÓN DE DETALLE ESPECÍFICO DE TARJETAS -->
-        <div class="credit-cards-section">
-            <h2 class="section-title" style="margin-bottom: 16px; text-align: center;">💳 Detalle Específico de Tarjetas de Crédito</h2>
-            <div class="card-tabs">
-                <button class="tab-btn active" id="tab-bbva" onclick="switchCardTab('Tarjeta BBVA')">Tarjeta BBVA</button>
-                <button class="tab-btn" id="tab-icbc" onclick="switchCardTab('Tarjeta ICBC')">Tarjeta ICBC</button>
-                <button class="tab-btn" id="tab-galicia" onclick="switchCardTab('Tarjeta Galicia')">Tarjeta Galicia</button>
-            </div>
-            
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <h3 id="card-tab-title" style="margin: 0; font-size: 1.1rem; color: var(--primary);">Gastos Tarjeta BBVA</h3>
-                <div style="font-weight: 700; font-size: 1.1rem;">Total Banco: <span id="card-tab-total" class="text-red">$0</span></div>
+            <!-- LISTA INGRESOS -->
+            <div class="ios-list-container">
+                <div class="ios-list-header text-green">💰 Ingresos</div>
+                <div id="ingresos-list"></div>
             </div>
 
-            <!-- COLUMNAS POR TARJETA -->
-            <div class="card-columns-container" id="card-columns-wrapper"></div>
+            <!-- LISTA GASTOS TOTALES (CON TARJETAS AGRUPADAS) -->
+            <div class="ios-list-container">
+                <div class="ios-list-header text-red">
+                    <span>💸 Gastos del Mes</span>
+                    <select id="filter-cat" onchange="renderTables()" style="padding: 4px 8px; font-size: 0.75rem; border-radius: 8px;">
+                        <option value="ALL">Todos</option>
+                        <option value="Gastos Ivan">Iván</option>
+                        <option value="Gastos Adri">Adri</option>
+                        <option value="Gastos Casa">Casa</option>
+                        <option value="Tarjeta BBVA">BBVA</option>
+                        <option value="Tarjeta ICBC">ICBC</option>
+                        <option value="Tarjeta Galicia">Galicia</option>
+                    </select>
+                </div>
+                <div id="gastos-list"></div>
+            </div>
+
+            <!-- DETALLE DE TARJETAS DE CRÉDITO -->
+            <div class="ios-list-container" style="padding: 12px;">
+                <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; text-align: center;">💳 Detalle Específico de Tarjetas</div>
+                <div class="card-tabs">
+                    <button class="tab-btn active" id="tab-bbva" onclick="switchCardTab('Tarjeta BBVA')">BBVA</button>
+                    <button class="tab-btn" id="tab-icbc" onclick="switchCardTab('Tarjeta ICBC')">ICBC</button>
+                    <button class="tab-btn" id="tab-galicia" onclick="switchCardTab('Tarjeta Galicia')">Galicia</button>
+                </div>
+                <div id="card-details-wrapper"></div>
+            </div>
+
         </div>
 
     </div>
+
+    <!-- NAVBAR INFERIOR -->
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="showHome()" id="nav-home-btn">
+            <span class="nav-icon">📅</span>
+            <span>Resumen</span>
+        </button>
+        <button class="nav-item" onclick="openModalCardForCreate()">
+            <span class="nav-icon">💳</span>
+            <span>Cargar Cuota</span>
+        </button>
+    </div>
+
 </div>
 
-<!-- MODAL NUEVO / EDITAR INGRESO -->
+<!-- MODAL INGRESO -->
 <div class="modal-overlay" id="modal-income">
     <div class="modal">
+        <div class="modal-handle"></div>
         <div class="modal-header">
-            <h2 class="text-green" id="modal-income-title">➕ Nuevo Ingreso</h2>
-            <button class="close-modal" onclick="closeModal('modal-income')">&times;</button>
+            <h3 class="text-green" id="modal-income-title">➕ Nuevo Ingreso</h3>
+            <button class="close-modal" onclick="closeModal('modal-income')">✕</button>
         </div>
         <form id="form-income" onsubmit="saveIncome(event)">
             <input type="hidden" id="income-id">
-            <div class="modal-body">
-                <div class="form-group"><label>Detalle</label><input type="text" id="income-detail" required></div>
-                <div class="form-group"><label>Monto ($)</label><input type="number" step="0.01" id="income-amount" required></div>
-                <div class="form-group"><label>Vencimiento / Fecha</label><input type="text" id="income-venc" placeholder="Ej: 10/8"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" onclick="closeModal('modal-income')">Cancelar</button>
-                <button type="submit" style="background:var(--success); color:white; border:none; padding:8px 16px; border-radius:8px;">Guardar</button>
-            </div>
+            <div class="form-group"><label>Detalle</label><input type="text" id="income-detail" required placeholder="Ej: Sueldo"></div>
+            <div class="form-group"><label>Monto ($)</label><input type="number" step="0.01" id="income-amount" required placeholder="0.00"></div>
+            <div class="form-group"><label>Vencimiento</label><input type="text" id="income-venc" placeholder="Ej: 10/8"></div>
+            <button type="submit" class="btn-submit" style="background: var(--success);">Guardar Ingreso</button>
         </form>
     </div>
 </div>
 
-<!-- MODAL NUEVO / EDITAR GASTO GENERAL -->
+<!-- MODAL GASTO GENERAL -->
 <div class="modal-overlay" id="modal-expense">
     <div class="modal">
+        <div class="modal-handle"></div>
         <div class="modal-header">
-            <h2 class="text-red" id="modal-expense-title">➖ Nuevo Gasto</h2>
-            <button class="close-modal" onclick="closeModal('modal-expense')">&times;</button>
+            <h3 class="text-red" id="modal-expense-title">➖ Nuevo Gasto</h3>
+            <button class="close-modal" onclick="closeModal('modal-expense')">✕</button>
         </div>
         <form id="form-expense" onsubmit="saveExpense(event)">
             <input type="hidden" id="expense-id">
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Categoría</label>
-                    <select id="expense-cat" required>
-                        <option value="Gastos Ivan">Gastos Iván</option>
-                        <option value="Gastos Adri">Gastos Adri</option>
-                        <option value="Gastos Casa">Gastos Casa</option>
-                        <option value="Tarjeta BBVA">Tarjeta BBVA</option>
-                        <option value="Tarjeta ICBC">Tarjeta ICBC</option>
-                        <option value="Tarjeta Galicia">Tarjeta Galicia</option>
-                    </select>
-                </div>
-                <div class="form-group"><label>Detalle</label><input type="text" id="expense-detail" required></div>
-                <div class="form-group"><label>Monto ($)</label><input type="number" step="0.01" id="expense-amount" required></div>
-                <div class="form-group"><label>Vencimiento</label><input type="text" id="expense-venc" placeholder="Ej: 15/8"></div>
+            <div class="form-group">
+                <label>Categoría</label>
+                <select id="expense-cat" required>
+                    <option value="Gastos Ivan">Gastos Iván</option>
+                    <option value="Gastos Adri">Gastos Adri</option>
+                    <option value="Gastos Casa">Gastos Casa</option>
+                    <option value="Tarjeta BBVA">Tarjeta BBVA</option>
+                    <option value="Tarjeta ICBC">Tarjeta ICBC</option>
+                    <option value="Tarjeta Galicia">Tarjeta Galicia</option>
+                </select>
             </div>
-            <div class="modal-footer">
-                <button type="button" onclick="closeModal('modal-expense')">Cancelar</button>
-                <button type="submit" style="background:var(--danger); color:white; border:none; padding:8px 16px; border-radius:8px;">Guardar</button>
-            </div>
+            <div class="form-group"><label>Detalle</label><input type="text" id="expense-detail" required placeholder="Ej: Servicio de luz"></div>
+            <div class="form-group"><label>Monto ($)</label><input type="number" step="0.01" id="expense-amount" required placeholder="0.00"></div>
+            <div class="form-group"><label>Vencimiento</label><input type="text" id="expense-venc" placeholder="Ej: 15/8"></div>
+            <button type="submit" class="btn-submit" style="background: var(--danger);">Guardar Gasto</button>
         </form>
     </div>
 </div>
 
-<!-- MODAL REGISTRO Y EDICIÓN COMPLETA DE TARJETA DE CRÉDITO -->
+<!-- MODAL GASTO EN TARJETA -->
 <div class="modal-overlay" id="modal-card">
     <div class="modal">
+        <div class="modal-handle"></div>
         <div class="modal-header">
-            <h2 class="text-blue" id="modal-card-title">💳 Cargar Gasto en Tarjeta</h2>
-            <button class="close-modal" onclick="closeModal('modal-card')">&times;</button>
+            <h3 class="text-blue" id="modal-card-title">💳 Gasto en Tarjeta</h3>
+            <button class="close-modal" onclick="closeModal('modal-card')">✕</button>
         </div>
         <form id="form-card" onsubmit="saveCardExpense(event)">
             <input type="hidden" id="card-id">
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Tarjeta</label>
-                    <select id="card-select" onchange="updateCardFormFields()" required>
-                        <option value="Tarjeta BBVA">Tarjeta BBVA</option>
-                        <option value="Tarjeta ICBC">Tarjeta ICBC</option>
-                        <option value="Tarjeta Galicia">Tarjeta Galicia</option>
-                    </select>
-                </div>
-
-                <div class="form-group" id="group-card-holder">
-                    <label>Titular</label>
-                    <select id="card-holder">
-                        <option value="Iván">Iván</option>
-                        <option value="Adri">Adri</option>
-                    </select>
-                </div>
-
-                <div class="form-group" id="group-card-type">
-                    <label>Tipo de Tarjeta</label>
-                    <select id="card-type"></select>
-                </div>
-
-                <div class="form-group"><label>Detalle del Consumo</label><input type="text" id="card-detail" placeholder="Ej: Supermercado" required></div>
-                <div class="form-group"><label>Monto de la Cuota ($)</label><input type="number" step="0.01" id="card-amount" placeholder="Ej: 5000" required></div>
-                
-                <div class="form-group" id="group-card-installments">
-                    <label>Cantidad de Cuotas</label>
-                    <select id="card-installments">
-                        <option value="1">1 pago (Sin cuotas)</option>
-                        <option value="2">2 cuotas</option>
-                        <option value="3">3 cuotas</option>
-                        <option value="4">4 cuotas</option>
-                        <option value="5">5 cuotas</option>
-                        <option value="6">6 cuotas</option>
-                        <option value="7">7 cuotas</option>
-                        <option value="8">8 cuotas</option>
-                        <option value="9">9 cuotas</option>
-                        <option value="10">10 cuotas</option>
-                        <option value="11">11 cuotas</option>
-                        <option value="12">12 cuotas</option>
-                        <option value="13">13 cuotas</option>
-                        <option value="14">14 cuotas</option>
-                        <option value="15">15 cuotas</option>
-                        <option value="16">16 cuotas</option>
-                        <option value="17">17 cuotas</option>
-                        <option value="18">18 cuotas</option>
-                        <option value="19">19 cuotas</option>
-                        <option value="20">20 cuotas</option>
-                        <option value="21">21 cuotas</option>
-                        <option value="22">22 cuotas</option>
-                        <option value="23">23 cuotas</option>
-                        <option value="24">24 cuotas</option>
-                    </select>
-                </div>
-
-                <div class="form-group"><label>Fecha / Vencimiento (Cuota 1)</label><input type="text" id="card-venc" placeholder="Ej: 20/8" required></div>
+            <div class="form-group">
+                <label>Tarjeta</label>
+                <select id="card-select" onchange="updateCardFormFields()" required>
+                    <option value="Tarjeta BBVA">Tarjeta BBVA</option>
+                    <option value="Tarjeta ICBC">Tarjeta ICBC</option>
+                    <option value="Tarjeta Galicia">Tarjeta Galicia</option>
+                </select>
             </div>
-            <div class="modal-footer">
-                <button type="button" onclick="closeModal('modal-card')">Cancelar</button>
-                <button type="submit" style="background:var(--primary); color:white; border:none; padding:8px 16px; border-radius:8px;" id="btn-save-card">Guardar Gasto</button>
+            <div class="form-group" id="group-card-holder">
+                <label>Titular</label>
+                <select id="card-holder">
+                    <option value="Iván">Iván</option>
+                    <option value="Adri">Adri</option>
+                </select>
             </div>
+            <div class="form-group" id="group-card-type">
+                <label>Tipo</label>
+                <select id="card-type"></select>
+            </div>
+            <div class="form-group"><label>Detalle</label><input type="text" id="card-detail" placeholder="Ej: Compra Electrónica" required></div>
+            <div class="form-group"><label>Monto Cuota ($)</label><input type="number" step="0.01" id="card-amount" placeholder="0.00" required></div>
+            <div class="form-group" id="group-card-installments">
+                <label>Cuotas</label>
+                <select id="card-installments">
+                    <option value="1">1 pago</option>
+                    <option value="3">3 cuotas</option>
+                    <option value="6">6 cuotas</option>
+                    <option value="12">12 cuotas</option>
+                    <option value="18">18 cuotas</option>
+                    <option value="24">24 cuotas</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Vencimiento Cuota 1</label><input type="text" id="card-venc" placeholder="Ej: 20/8" required></div>
+            <button type="submit" class="btn-submit" style="background: var(--primary);">Guardar Gasto Tarjeta</button>
         </form>
     </div>
 </div>
@@ -617,25 +644,16 @@
     let currentMonth = "";
     let monthItems = [];
     let currentCardSelected = "Tarjeta BBVA";
-    let categoryChart, statusChart, firstTenDaysChart;
+    let categoryChart, firstTenDaysChart;
 
     function toggleTheme() {
         document.body.classList.toggle('dark-theme');
         const isDark = document.body.classList.contains('dark-theme');
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-        document.getElementById('theme-icon').innerText = isDark ? '☀️' : '🌙';
-        document.getElementById('theme-text').innerText = isDark ? 'Modo Claro' : 'Modo Oscuro';
-    }
-
-    if (localStorage.getItem('theme') === 'dark') {
-        document.body.classList.add('dark-theme');
-        document.getElementById('theme-icon').innerText = '☀️';
-        document.getElementById('theme-text').innerText = 'Modo Claro';
+        document.getElementById('theme-btn').innerText = isDark ? '☀️' : '🌙';
     }
 
     function toggleCharts() {
-        const wrapper = document.getElementById('charts-wrapper');
-        wrapper.classList.toggle('visible');
+        document.getElementById('charts-wrapper').classList.toggle('visible');
     }
 
     function openModalCardForCreate() {
@@ -653,11 +671,9 @@
             if (id === 'modal-income') {
                 document.getElementById('form-income').reset();
                 document.getElementById('income-id').value = '';
-                document.getElementById('modal-income-title').innerText = '➕ Nuevo Ingreso';
             } else if (id === 'modal-expense') {
                 document.getElementById('form-expense').reset();
                 document.getElementById('expense-id').value = '';
-                document.getElementById('modal-expense-title').innerText = '➖ Nuevo Gasto';
             }
         }
         document.getElementById(id).classList.add('active');
@@ -690,14 +706,13 @@
         fetchHomeSummary();
         document.getElementById('view-month').classList.remove('active');
         document.getElementById('view-home').classList.add('active');
+        document.getElementById('app-header-title').innerText = "Finanzas";
     }
 
     async function fetchHomeSummary() {
         const container = document.getElementById('months-container');
         try {
             const { data, error } = await db.from('movimientos').select('*');
-            if (error) throw error;
-
             container.innerHTML = '';
             monthsList.forEach(month => {
                 const items = data ? data.filter(i => i.mes === month) : [];
@@ -710,26 +725,23 @@
                 card.onclick = () => openMonth(month);
                 card.innerHTML = `
                     <h2>${month}</h2>
-                    <div class="month-summary">
-                        <div class="month-summary-row"><span>Ingresos:</span> <strong class="text-green">${formatMoney(inc)}</strong></div>
-                        <div class="month-summary-row"><span>Gastos:</span> <strong class="text-red">${formatMoney(exp)}</strong></div>
-                        <div class="month-summary-row" style="border-top:1px dashed var(--border); padding-top:4px;">
-                            <span>Balance:</span> <strong class="${diff >= 0 ? 'text-green' : 'text-red'}">${formatMoney(diff)}</strong>
+                    <div>
+                        <div class="month-summary-row"><span>Ingresos:</span> <span class="text-green">${formatMoney(inc)}</span></div>
+                        <div class="month-summary-row"><span>Gastos:</span> <span class="text-red">${formatMoney(exp)}</span></div>
+                        <div class="month-summary-row" style="font-weight:700; margin-top:6px; color:var(--text-main);">
+                            <span>Balance:</span> <span class="${diff >= 0 ? 'text-green' : 'text-red'}">${formatMoney(diff)}</span>
                         </div>
                     </div>
                 `;
                 container.appendChild(card);
             });
-        } catch (err) {
-            console.error("Error al cargar Supabase:", err);
-        }
+        } catch (err) { console.error(err); }
     }
 
     async function openMonth(monthName) {
         currentMonth = monthName;
-        document.getElementById('month-title').innerText = `${currentMonth} 2026`;
+        document.getElementById('app-header-title').innerText = `${currentMonth} 2026`;
         document.getElementById('view-home').classList.remove('active');
-        document.getElementById('view-month').classList.active = false;
         document.getElementById('view-month').classList.add('active');
         await fetchMonthData();
     }
@@ -752,130 +764,42 @@
         renderCardSection();
     }
 
-    function renderCardTableRows(itemsList) {
-        if (itemsList.length === 0) {
-            return `<tr><td colspan="4" style="text-align:center; color: var(--text-muted);">Sin consumos registrados</td></tr>`;
-        }
-        return itemsList.map(item => `
-            <tr>
-                <td>${item.detalle}</td>
-                <td><strong>${formatMoney(item.monto)}</strong></td>
-                <td>${item.vencimiento || '-'}</td>
-                <td style="text-align: right;">
-                    <button class="btn-action-sm btn-edit-sm" onclick="editCardItem('${item.id}')">✏️</button>
-                    <button class="btn-action-sm btn-danger-sm" onclick="deleteItem('${item.id}')">🗑️</button>
-                </td>
-            </tr>
-        `).join('');
-    }
-
     function renderCardSection() {
-        const wrapper = document.getElementById('card-columns-wrapper');
-        const title = document.getElementById('card-tab-title');
-        const totalSpan = document.getElementById('card-tab-total');
-        
-        title.innerText = `Gastos ${currentCardSelected}`;
+        const wrapper = document.getElementById('card-details-wrapper');
         const cardItems = monthItems.filter(i => i.categoria === currentCardSelected);
-        const total = cardItems.reduce((acc, i) => acc + Number(i.monto), 0);
-        totalSpan.innerText = formatMoney(total);
-
         wrapper.innerHTML = '';
 
-        if (currentCardSelected === 'Tarjeta BBVA') {
-            const holders = ['Iván', 'Adri'];
-            const types = ['Visa', 'Mastercard'];
-
-            holders.forEach(holder => {
-                types.forEach(type => {
-                    const filtered = cardItems.filter(i => i.titular === holder && i.tipo_tarjeta === type);
-                    const subTotal = filtered.reduce((acc, i) => acc + Number(i.monto), 0);
-
-                    const col = document.createElement('div');
-                    col.className = 'card-sub-column';
-                    col.innerHTML = `
-                        <div class="card-sub-header">
-                            <div>
-                                <div class="holder-subgroup-title">Titular: ${holder}</div>
-                                <div class="card-sub-title">BBVA ${type}</div>
-                            </div>
-                            <div style="font-weight:700;" class="text-red">${formatMoney(subTotal)}</div>
-                        </div>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Detalle</th>
-                                    <th>Monto</th>
-                                    <th>Venc.</th>
-                                    <th style="text-align: right;">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>${renderCardTableRows(filtered)}</tbody>
-                        </table>
-                    `;
-                    wrapper.appendChild(col);
-                });
-            });
-        } else if (currentCardSelected === 'Tarjeta Galicia') {
-            const types = ['Visa', 'American Express'];
-            types.forEach(type => {
-                const filtered = cardItems.filter(i => i.tipo_tarjeta === type);
-                const subTotal = filtered.reduce((acc, i) => acc + Number(i.monto), 0);
-
-                const col = document.createElement('div');
-                col.className = 'card-sub-column';
-                col.innerHTML = `
-                    <div class="card-sub-header">
-                        <div class="card-sub-title">Galicia ${type}</div>
-                        <div style="font-weight:700;" class="text-red">${formatMoney(subTotal)}</div>
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Detalle</th>
-                                <th>Monto</th>
-                                <th>Venc.</th>
-                                <th style="text-align: right;">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>${renderCardTableRows(filtered)}</tbody>
-                    </table>
-                `;
-                wrapper.appendChild(col);
-            });
-        } else {
-            const subTotal = cardItems.reduce((acc, i) => acc + Number(i.monto), 0);
-            const col = document.createElement('div');
-            col.className = 'card-sub-column';
-            col.innerHTML = `
-                <div class="card-sub-header">
-                    <div class="card-sub-title">Resumen Consolidado ICBC</div>
-                    <div style="font-weight:700;" class="text-red">${formatMoney(subTotal)}</div>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Detalle</th>
-                            <th>Monto</th>
-                            <th>Venc.</th>
-                            <th style="text-align: right;">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>${renderCardTableRows(cardItems)}</tbody>
-                </table>
-            `;
-            wrapper.appendChild(col);
+        if (cardItems.length === 0) {
+            wrapper.innerHTML = `<div style="text-align:center; font-size:0.75rem; color:var(--text-muted); padding:10px;">Sin consumos registrados</div>`;
+            return;
         }
+
+        cardItems.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'ios-item';
+            div.style.padding = '8px 0';
+            div.innerHTML = `
+                <div class="ios-item-info">
+                    <span class="ios-item-title">${item.detalle}</span>
+                    <span class="ios-item-sub">${item.titular ? item.titular + ' • ' : ''}${item.tipo_tarjeta || ''} ${item.vencimiento ? ' • Venc: ' + item.vencimiento : ''}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:0.85rem; font-weight:700;" class="text-red">${formatMoney(item.monto)}</span>
+                    <button onclick="deleteItem('${item.id}')" style="background:none; border:none; color:var(--danger); cursor:pointer;">🗑️</button>
+                </div>
+            `;
+            wrapper.appendChild(div);
+        });
     }
 
     function renderTables() {
-        const ingresosBody = document.getElementById('ingresos-body');
-        const gastosBody = document.getElementById('gastos-body');
+        const ingresosList = document.getElementById('ingresos-list');
+        const gastosList = document.getElementById('gastos-list');
         const filterCat = document.getElementById('filter-cat').value;
 
         let totalInc = 0, totalCobrar = 0, totalExp = 0, totalPagar = 0;
-
-        ingresosBody.innerHTML = '';
-        gastosBody.innerHTML = '';
+        ingresosList.innerHTML = '';
+        gastosList.innerHTML = '';
 
         // Render Ingresos
         const incomeItems = monthItems.filter(i => i.tipo === 'INCOME');
@@ -884,22 +808,21 @@
             totalInc += amount;
             if (!item.pagado) totalCobrar += amount;
 
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${item.detalle}</td>
-                <td><strong>${formatMoney(amount)}</strong></td>
-                <td>${item.vencimiento || '-'}</td>
-                <td>
+            const div = document.createElement('div');
+            div.className = 'ios-item';
+            div.innerHTML = `
+                <div class="ios-item-info">
+                    <span class="ios-item-title">${item.detalle}</span>
+                    <span class="ios-item-sub">Venc: ${item.vencimiento || '-'}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-weight:700;">${formatMoney(amount)}</span>
                     <span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="toggleStatus('${item.id}', ${!item.pagado})">
                         ${item.pagado ? 'Cobrado' : 'Pendiente'}
                     </span>
-                </td>
-                <td style="text-align: right;">
-                    <button class="btn-action-sm btn-edit-sm" onclick="editIncome('${item.id}')">✏️</button>
-                    <button class="btn-action-sm btn-danger-sm" onclick="deleteItem('${item.id}')">🗑️</button>
-                </td>
+                </div>
             `;
-            ingresosBody.appendChild(tr);
+            ingresosList.appendChild(div);
         });
 
         // Totales generales de gastos
@@ -910,66 +833,61 @@
             if (!i.pagado) totalPagar += amount;
         });
 
-        // Separar gastos normales y tarjetas
+        // Separar gastos individuales de tarjetas
         let normalExpenses = allExpenseItems.filter(i => !cardCategories.includes(i.categoria));
-        
         if (filterCat !== 'ALL') {
-            if (cardCategories.includes(filterCat)) {
-                normalExpenses = [];
-            } else {
+            if (!cardCategories.includes(filterCat)) {
                 normalExpenses = normalExpenses.filter(i => i.categoria === filterCat);
+            } else {
+                normalExpenses = [];
             }
         }
 
-        // Render Gastos Normales
+        // Render Gastos Individuales
         normalExpenses.forEach(item => {
             const amount = Number(item.monto);
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><span class="cat-tag">${item.categoria}</span></td>
-                <td>${item.detalle}</td>
-                <td><strong>${formatMoney(amount)}</strong></td>
-                <td>${item.vencimiento || '-'}</td>
-                <td>
+            const div = document.createElement('div');
+            div.className = 'ios-item';
+            div.innerHTML = `
+                <div class="ios-item-info">
+                    <span class="ios-item-title">${item.detalle}</span>
+                    <span class="ios-item-sub">${item.categoria} • Venc: ${item.vencimiento || '-'}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-weight:700;">${formatMoney(amount)}</span>
                     <span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="toggleStatus('${item.id}', ${!item.pagado})">
                         ${item.pagado ? 'Pagado' : 'Pendiente'}
                     </span>
-                </td>
-                <td style="text-align: right;">
-                    <button class="btn-action-sm btn-edit-sm" onclick="editExpense('${item.id}')">✏️</button>
-                    <button class="btn-action-sm btn-danger-sm" onclick="deleteItem('${item.id}')">🗑️</button>
-                </td>
+                </div>
             `;
-            gastosBody.appendChild(tr);
+            gastosList.appendChild(div);
         });
 
-        // ✅ FILAS AGRUPADAS DE TARJETAS EN LA TABLA DE GASTOS GENERALES
+        // ✅ FILAS CONSOLIDADAS DE TARJETAS EN LA LISTA DE GASTOS
         cardCategories.forEach(cardCat => {
             if (filterCat === 'ALL' || filterCat === cardCat) {
                 const cardItems = allExpenseItems.filter(i => i.categoria === cardCat);
                 if (cardItems.length > 0) {
                     const cardTotal = cardItems.reduce((acc, i) => acc + Number(i.monto), 0);
                     const allPaid = cardItems.every(i => i.pagado);
-                    const vencStr = cardItems[0]?.vencimiento || '-';
 
-                    const tr = document.createElement('tr');
-                    tr.className = 'card-summary-row';
-                    tr.innerHTML = `
-                        <td><span class="cat-tag" style="background:var(--primary); color:white;">${cardCat}</span></td>
-                        <td><strong>Resumen Consolidado ${cardCat}</strong> (${cardItems.length} consumos)</td>
-                        <td><strong class="text-red">${formatMoney(cardTotal)}</strong></td>
-                        <td>${vencStr}</td>
-                        <td>
-                            <!-- ✅ MARCAR PAGADO/PENDIENTE EL RESUMEN COMPLETO DE LA TARJETA -->
+                    const div = document.createElement('div');
+                    div.className = 'ios-item';
+                    div.style.background = 'rgba(0, 122, 255, 0.05)';
+                    div.innerHTML = `
+                        <div class="ios-item-info">
+                            <span class="ios-item-title" style="color:var(--primary); font-weight:700;">${cardCat}</span>
+                            <span class="ios-item-sub">${cardItems.length} consumos del mes</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-weight:700;" class="text-red">${formatMoney(cardTotal)}</span>
+                            <!-- MARCAR PAGADO EL TOTAL DE LA TARJETA EN UN SOLO CLIC -->
                             <span class="badge ${allPaid ? 'badge-paid' : 'badge-pending'}" onclick="toggleGroupCardStatus('${cardCat}', ${!allPaid})">
-                                ${allPaid ? 'Resumen Pagado' : 'Resumen Pendiente'}
+                                ${allPaid ? 'Pagada' : 'Pagar Total'}
                             </span>
-                        </td>
-                        <td style="text-align: right; font-size: 0.75rem; color: var(--text-muted);">
-                            Ver abajo
-                        </td>
+                        </div>
                     `;
-                    gastosBody.appendChild(tr);
+                    gastosList.appendChild(div);
                 }
             }
         });
@@ -990,18 +908,16 @@
         if (!error) await fetchMonthData();
     }
 
-    /* ✅ NUEVA FUNCIÓN: CAMBIAR ESTADO A TODOS LOS GASTOS DE UNA TARJETA DE UN SOLO CLIC */
     async function toggleGroupCardStatus(cardCategory, newStatus) {
         const { error } = await db.from('movimientos')
             .update({ pagado: newStatus })
             .eq('mes', currentMonth)
             .eq('categoria', cardCategory);
-            
         if (!error) await fetchMonthData();
     }
 
     async function deleteItem(id) {
-        if (confirm('¿Deseas eliminar este registro?')) {
+        if (confirm('¿Eliminar registro?')) {
             const { error } = await db.from('movimientos').delete().eq('id', id);
             if (!error) await fetchMonthData();
         }
@@ -1011,21 +927,14 @@
         e.preventDefault();
         const id = document.getElementById('income-id').value;
         const payload = {
-            mes: currentMonth,
-            tipo: 'INCOME',
-            categoria: 'Ingresos',
+            mes: currentMonth, tipo: 'INCOME', categoria: 'Ingresos',
             detalle: document.getElementById('income-detail').value,
             monto: parseFloat(document.getElementById('income-amount').value),
             vencimiento: document.getElementById('income-venc').value,
             pagado: false
         };
-
-        if (id) {
-            delete payload.pagado;
-            await db.from('movimientos').update(payload).eq('id', id);
-        } else {
-            await db.from('movimientos').insert([payload]);
-        }
+        if (id) { delete payload.pagado; await db.from('movimientos').update(payload).eq('id', id); }
+        else { await db.from('movimientos').insert([payload]); }
         closeModal('modal-income');
         await fetchMonthData();
     }
@@ -1034,28 +943,21 @@
         e.preventDefault();
         const id = document.getElementById('expense-id').value;
         const payload = {
-            mes: currentMonth,
-            tipo: 'EXPENSE',
+            mes: currentMonth, tipo: 'EXPENSE',
             categoria: document.getElementById('expense-cat').value,
             detalle: document.getElementById('expense-detail').value,
             monto: parseFloat(document.getElementById('expense-amount').value),
             vencimiento: document.getElementById('expense-venc').value,
             pagado: false
         };
-
-        if (id) {
-            delete payload.pagado;
-            await db.from('movimientos').update(payload).eq('id', id);
-        } else {
-            await db.from('movimientos').insert([payload]);
-        }
+        if (id) { delete payload.pagado; await db.from('movimientos').update(payload).eq('id', id); }
+        else { await db.from('movimientos').insert([payload]); }
         closeModal('modal-expense');
         await fetchMonthData();
     }
 
     async function saveCardExpense(e) {
         e.preventDefault();
-        const id = document.getElementById('card-id').value;
         const cardSelected = document.getElementById('card-select').value;
         const detail = document.getElementById('card-detail').value;
         const amount = parseFloat(document.getElementById('card-amount').value);
@@ -1064,91 +966,31 @@
         const type = document.getElementById('card-type').value;
         const installments = parseInt(document.getElementById('card-installments').value);
 
-        if (id) {
-            const payload = {
+        const startIndex = monthsList.indexOf(currentMonth);
+        const itemsToInsert = [];
+
+        for (let i = 0; i < installments; i++) {
+            const monthIdx = (startIndex + i) % 12;
+            itemsToInsert.push({
+                mes: monthsList[monthIdx],
+                tipo: 'EXPENSE',
                 categoria: cardSelected,
-                detalle: detail,
+                detalle: installments > 1 ? `${detail} (${i + 1}/${installments})` : detail,
                 monto: amount,
                 vencimiento: venc,
                 titular: cardSelected === 'Tarjeta BBVA' ? holder : null,
-                tipo_tarjeta: (cardSelected === 'Tarjeta BBVA' || cardSelected === 'Tarjeta Galicia') ? type : null
-            };
-            await db.from('movimientos').update(payload).eq('id', id);
-        } else {
-            const startIndex = monthsList.indexOf(currentMonth);
-            const itemsToInsert = [];
-
-            for (let i = 0; i < installments; i++) {
-                const monthIdx = (startIndex + i) % 12;
-                const targetMonth = monthsList[monthIdx];
-                const detailText = installments > 1 ? `${detail} (${i + 1}/${installments})` : detail;
-
-                itemsToInsert.push({
-                    mes: targetMonth,
-                    tipo: 'EXPENSE',
-                    categoria: cardSelected,
-                    detalle: detailText,
-                    monto: amount,
-                    vencimiento: venc,
-                    titular: cardSelected === 'Tarjeta BBVA' ? holder : null,
-                    tipo_tarjeta: (cardSelected === 'Tarjeta BBVA' || cardSelected === 'Tarjeta Galicia') ? type : null,
-                    pagado: false
-                });
-            }
-            await db.from('movimientos').insert(itemsToInsert);
+                tipo_tarjeta: (cardSelected === 'Tarjeta BBVA' || cardSelected === 'Tarjeta Galicia') ? type : null,
+                pagado: false
+            });
         }
-
+        await db.from('movimientos').insert(itemsToInsert);
         closeModal('modal-card');
         await fetchMonthData();
-    }
-
-    function editIncome(id) {
-        const item = monthItems.find(i => i.id == id);
-        if (!item) return;
-        document.getElementById('income-id').value = item.id;
-        document.getElementById('income-detail').value = item.detalle;
-        document.getElementById('income-amount').value = item.monto;
-        document.getElementById('income-venc').value = item.vencimiento || '';
-        document.getElementById('modal-income-title').innerText = '✏️ Editar Ingreso';
-        openModal('modal-income', false);
-    }
-
-    function editExpense(id) {
-        const item = monthItems.find(i => i.id == id);
-        if (!item) return;
-        document.getElementById('expense-id').value = item.id;
-        document.getElementById('expense-cat').value = item.categoria;
-        document.getElementById('expense-detail').value = item.detalle;
-        document.getElementById('expense-amount').value = item.monto;
-        document.getElementById('expense-venc').value = item.vencimiento || '';
-        document.getElementById('modal-expense-title').innerText = '✏️ Editar Gasto';
-        openModal('modal-expense', false);
-    }
-
-    function editCardItem(id) {
-        const item = monthItems.find(i => i.id == id);
-        if (!item) return;
-
-        document.getElementById('card-id').value = item.id;
-        document.getElementById('card-select').value = item.categoria;
-        updateCardFormFields();
-
-        if (item.categoria === 'Tarjeta BBVA') document.getElementById('card-holder').value = item.titular || 'Iván';
-        if (item.categoria === 'Tarjeta BBVA' || item.categoria === 'Tarjeta Galicia') document.getElementById('card-type').value = item.tipo_tarjeta || '';
-
-        document.getElementById('card-detail').value = item.detalle;
-        document.getElementById('card-amount').value = item.monto;
-        document.getElementById('card-venc').value = item.vencimiento || '';
-        document.getElementById('group-card-installments').style.display = 'none';
-        document.getElementById('modal-card-title').innerText = '✏️ Editar Cuota / Gasto Tarjeta';
-
-        openModal('modal-card', false);
     }
 
     function renderCharts() {
         const expenses = monthItems.filter(i => i.tipo === 'EXPENSE');
 
-        // 1. Gráfico primeros 10 días
         const earlyExpenses = expenses.filter(i => {
             if (!i.vencimiento) return false;
             const dayMatch = i.vencimiento.match(/^(\d+)/);
@@ -1163,13 +1005,12 @@
         firstTenDaysChart = new Chart(ctx1, {
             type: 'doughnut',
             data: {
-                labels: ['Días 1 al 10', 'Resto del mes'],
-                datasets: [{ data: [earlyTotal, restTotal], backgroundColor: ['#f59e0b', '#cbd5e1'] }]
+                labels: ['Días 1-10', 'Resto'],
+                datasets: [{ data: [earlyTotal, restTotal], backgroundColor: ['#ff9500', '#8e8e93'] }]
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
 
-        // 2. Gráfico Categorías
         const categories = {};
         expenses.forEach(i => categories[i.categoria] = (categories[i.categoria] || 0) + Number(i.monto));
 
@@ -1179,25 +1020,7 @@
             type: 'pie',
             data: {
                 labels: Object.keys(categories),
-                datasets: [{
-                    data: Object.values(categories),
-                    backgroundColor: ['#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#f59e0b']
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-
-        // 3. Gráfico Estado de Pagos
-        let paid = 0, pending = 0;
-        expenses.forEach(i => i.pagado ? paid += Number(i.monto) : pending += Number(i.monto));
-
-        if (statusChart) statusChart.destroy();
-        const ctx3 = document.getElementById('statusChart').getContext('2d');
-        statusChart = new Chart(ctx3, {
-            type: 'doughnut',
-            data: {
-                labels: ['Pagado', 'Pendiente'],
-                datasets: [{ data: [paid, pending], backgroundColor: ['#10b981', '#ef4444'] }]
+                datasets: [{ data: Object.values(categories), backgroundColor: ['#007aff', '#34c759', '#ff3b30', '#5856d6', '#ff9500'] }]
             },
             options: { responsive: true, maintainAspectRatio: false }
         });
