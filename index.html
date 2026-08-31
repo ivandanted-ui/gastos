@@ -1769,7 +1769,6 @@ function triggerPdfSelect() {
     document.getElementById('pdf-file-input').click();
 }
 
-// Procesa el archivo PDF subido por el usuario
 async function handlePdfUpload(event) {
     const file = event.target.files[0];
     const selectedCard = document.getElementById('pdf-card-select').value;
@@ -1777,11 +1776,14 @@ async function handlePdfUpload(event) {
     if (!file || !selectedCard || !currentMonth) return;
 
     try {
+        console.log("Leyendo archivo PDF:", file.name);
         const arrayBuffer = await file.arrayBuffer();
+        
+        // Cargar el documento PDF
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         let fullText = "";
 
-        // Leer texto de todas las páginas del documento PDF
+        // Extraer texto de cada página
         for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
@@ -1789,11 +1791,13 @@ async function handlePdfUpload(event) {
             fullText += pageText + "\n";
         }
 
-        // Extraer los consumos utilizando Expresión Regular
+        console.log("Texto extraído del PDF:", fullText.substring(0, 500) + "..."); // Muestra los primeros 500 caracteres
+
+        // Extraer los consumos
         const parsedExpenses = extractExpensesFromText(fullText, selectedCard);
 
         if (parsedExpenses.length === 0) {
-            alert("No se detectaron consumos con un formato válido dentro del PDF.");
+            alert("No se pudieron detectar consumos en el PDF.\n\nSugerencia: Asegúrate de que el PDF tenga texto seleccionable y no sea un escaneo/imagen.");
             event.target.value = '';
             return;
         }
@@ -1804,26 +1808,58 @@ async function handlePdfUpload(event) {
             return;
         }
 
-        // Insertar consumos extraídos en la base de datos Supabase
-        const { error } = await db.from('movimientos').insert(parsedExpenses);
+        // Insertar consumos en Supabase
+        const { data, error } = await db.from('movimientos').insert(parsedExpenses);
 
-        if (error) throw error;
+        if (error) {
+            console.error("Error devuelto por Supabase:", error);
+            alert(`Error de Supabase: ${error.message || JSON.stringify(error)}`);
+            return;
+        }
 
         alert(`✅ Se agregaron ${parsedExpenses.length} consumos exitosamente a ${selectedCard}.`);
         await fetchMonthData();
 
     } catch (err) {
-        console.error("Error al procesar el PDF:", err);
-        alert("Hubo un error al leer el archivo PDF o al guardar los consumos.");
+        console.error("Error detallado al procesar PDF:", err);
+        alert(`Error al procesar el archivo: ${err.message || err}`);
     } finally {
-        event.target.value = ''; // Resetear el input de archivos
+        event.target.value = ''; // Resetear el input
     }
 }
 
-// Expresión regular que analiza las líneas de texto para extraer fecha, detalle e importe
 function extractExpensesFromText(text, cardCategory) {
     const items = [];
     
+    // Expresión regular ajustada para capturar líneas de consumos (Fecha Detalle Monto)
+    const lineRegex = /(\d{2}\/\d{2})\s+([A-Za-z0-9\s\.\*\/#-]+?)\s+\$?\s*([\d\.\,]+)/g;
+    let match;
+
+    while ((match = lineRegex.exec(text)) !== null) {
+        const detail = match[2].trim();
+        let amountRaw = match[3];
+
+        // Normalizar montos
+        amountRaw = amountRaw.replace(/\./g, '').replace(',', '.');
+        const amount = parseFloat(amountRaw);
+
+        if (!isNaN(amount) && amount > 0 && detail.length > 2) {
+            items.push({
+                mes: currentMonth,
+                tipo: 'EXPENSE',
+                categoria: cardCategory,
+                detalle: detail,
+                monto: amount,
+                pagado: false,
+                vencimiento: null,
+                titular: 'Iván',              // Valor por defecto para evitar errores de columnas requeridas
+                tipo_tarjeta: 'Visa'          // Valor por defecto
+            });
+        }
+    }
+
+    return items;
+}
     // Busca líneas con formato: FECHA (DD/MM) + DETALLE/COMERCIO + IMPORTE
     const lineRegex = /(\d{2}\/\d{2})\s+([A-Za-z0-9\s\.\*\/#-]+?)\s+\$?\s*([\d\.\,]+)/g;
     let match;
