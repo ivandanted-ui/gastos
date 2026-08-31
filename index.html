@@ -394,11 +394,21 @@
             padding: 8px 20px 8px 30px;
             font-size: 0.8rem;
             font-weight: 600;
-            color: var(--text-muted);
+            color: var(--text-main);
             border-bottom: 1px solid var(--border);
         }
 
-        /* BADGES */
+        .card-type-header {
+            background: rgba(0, 0, 0, 0.02);
+            padding: 6px 20px 6px 40px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            text-transform: uppercase;
+        }
+
+        /* BADGES & BOTONES DANGER */
         .badge {
             padding: 6px 12px;
             border-radius: 20px;
@@ -410,6 +420,25 @@
         .badge:active { transform: scale(0.95); }
         .badge-paid { background-color: rgba(16, 185, 129, 0.15); color: var(--success); }
         .badge-pending { background-color: rgba(239, 68, 68, 0.15); color: var(--danger); }
+
+        .btn-danger-outline {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--danger);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-danger-outline:hover {
+            background: var(--danger);
+            color: white;
+        }
 
         .card-tabs {
             display: flex;
@@ -651,7 +680,14 @@
 
             <!-- VISTA HOME (SELECCIÓN DE MESES) -->
             <div id="view-home" class="view-section active">
-                <p style="color: var(--text-muted);">Selecciona un mes para gestionar tus finanzas:</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+                    <p style="color: var(--text-muted);">Selecciona un mes para gestionar tus finanzas:</p>
+                    
+                    <!-- CAMBIO: BOTÓN PARA BORRAR TODOS LOS INGRESOS DE TODOS LOS MESES -->
+                    <button class="btn-danger-outline" onclick="deleteAllIncomesGlobal()">
+                        <span>⚠️ Borrar Todos los Ingresos (Todos los meses)</span>
+                    </button>
+                </div>
                 <div class="months-grid" id="months-container"></div>
             </div>
 
@@ -710,7 +746,14 @@
                     
                     <!-- PANEL INGRESOS -->
                     <div class="panel-box">
-                        <div class="panel-header text-green">💰 Ingresos del Mes</div>
+                        <div class="panel-header text-green">
+                            <span>💰 Ingresos del Mes</span>
+                            
+                            <!-- CAMBIO: BOTÓN BORRAR INGRESOS DEL MES -->
+                            <button class="btn-danger-outline" style="padding: 4px 8px; font-size: 0.75rem;" onclick="deleteAllIncomesCurrentMonth()">
+                                🗑️ Borrar Todos
+                            </button>
+                        </div>
                         <div id="ingresos-list"></div>
                     </div>
 
@@ -765,7 +808,6 @@
             <input type="hidden" id="income-id">
             <div class="form-group"><label>Detalle</label><input type="text" id="income-detail" required placeholder="Ej: Sueldo"></div>
             <div class="form-group"><label>Monto ($)</label><input type="number" step="0.01" id="income-amount" required placeholder="0.00"></div>
-            <!-- CAMBIO: FECHA DE COBRO CON CALENDARIO -->
             <div class="form-group"><label>Fecha de Cobro</label><input type="date" id="income-venc"></div>
             
             <div class="checkbox-group" id="frequent-income-wrapper">
@@ -800,7 +842,6 @@
             </div>
             <div class="form-group"><label>Detalle</label><input type="text" id="expense-detail" required placeholder="Ej: Servicio de luz"></div>
             <div class="form-group"><label>Monto ($)</label><input type="number" step="0.01" id="expense-amount" required placeholder="0.00"></div>
-            <!-- CAMBIO: FECHA DE VENCIMIENTO CON CALENDARIO -->
             <div class="form-group"><label>Fecha de Vencimiento</label><input type="date" id="expense-venc"></div>
             <button type="submit" class="btn-submit" style="background: var(--danger);">Guardar Gasto</button>
         </form>
@@ -836,14 +877,10 @@
                 <select id="card-type"></select>
             </div>
             <div class="form-group"><label>Detalle</label><input type="text" id="card-detail" placeholder="Ej: Compra Electrónica" required></div>
-            
-            <!-- CAMBIO: MONTO TOTAL Y CÁLCULO DE CUOTA -->
             <div class="form-group">
                 <label>Monto Total de la Compra ($)</label>
                 <input type="number" step="0.01" id="card-total-amount" placeholder="0.00" oninput="calculateInstallmentAmount()" required>
             </div>
-            
-            <!-- CAMBIO: CUOTAS DEL 1 AL 24 -->
             <div class="form-group" id="group-card-installments">
                 <label>Cantidad de Cuotas (1 a 24)</label>
                 <select id="card-installments" onchange="calculateInstallmentAmount()"></select>
@@ -851,7 +888,6 @@
 
             <div class="calculated-hint" id="installment-hint">Valor por cuota: $0.00</div>
 
-            <!-- CAMBIO: FECHA CON CALENDARIO -->
             <div class="form-group" style="margin-top: 12px;"><label>Fecha Vencimiento Cuota 1</label><input type="date" id="card-venc" required></div>
             <button type="submit" class="btn-submit" style="background: var(--primary);">Guardar Gasto Tarjeta</button>
         </form>
@@ -870,7 +906,6 @@
     let currentCardSelected = "ALL";
     let categoryChart, firstTenDaysChart;
 
-    // Inicializar opciones de cuotas del 1 al 24
     function initInstallmentsSelect() {
         const select = document.getElementById('card-installments');
         select.innerHTML = '';
@@ -893,7 +928,6 @@
         document.getElementById('charts-wrapper').classList.toggle('visible');
     }
 
-    // Modal Ingreso Creación
     function openModalIncomeForCreate() {
         document.getElementById('form-income').reset();
         document.getElementById('income-id').value = '';
@@ -902,7 +936,6 @@
         openModal('modal-income', false);
     }
 
-    // Modal Ingreso Edición
     function editIncome(id) {
         const item = monthItems.find(i => i.id === id);
         if (!item) return;
@@ -915,7 +948,6 @@
         openModal('modal-income', false);
     }
 
-    // Modal Gasto Creación
     function openModalExpenseForCreate() {
         document.getElementById('form-expense').reset();
         document.getElementById('expense-id').value = '';
@@ -923,7 +955,6 @@
         openModal('modal-expense', false);
     }
 
-    // Modal Gasto Edición
     function editExpense(id) {
         const item = monthItems.find(i => i.id === id);
         if (!item) return;
@@ -936,7 +967,6 @@
         openModal('modal-expense', false);
     }
 
-    // Modal Tarjeta Creación
     function openModalCardForCreate() {
         document.getElementById('form-card').reset();
         document.getElementById('card-id').value = '';
@@ -1065,7 +1095,7 @@
         renderCardSection();
     }
 
-    // RENDERING AGRUPADO DE TARJETAS POR BANCO, TARJETA Y TITULAR
+    // CAMBIO: RENDER AGRUPADO POR TARJETA/BANCO -> TITULAR -> TIPO DE TARJETA
     function renderCardSection() {
         const wrapper = document.getElementById('card-details-wrapper');
         let cardItems = monthItems.filter(i => cardCategories.includes(i.categoria));
@@ -1081,7 +1111,7 @@
             return;
         }
 
-        // Agrupar por Banco / Categoria
+        // 1. Agrupar por Banco / Tarjeta
         const groupedByBank = {};
         cardItems.forEach(item => {
             if (!groupedByBank[item.categoria]) groupedByBank[item.categoria] = [];
@@ -1094,37 +1124,52 @@
             bankHeader.innerText = `🏦 ${bank}`;
             wrapper.appendChild(bankHeader);
 
-            // Agrupar dentro del banco por Titular
+            // 2. Agrupar por Titular
             const groupedByHolder = {};
             groupedByBank[bank].forEach(item => {
-                const holderKey = item.titular ? `Titular: ${item.titular}` : 'Consumos Generales';
+                const holderKey = item.titular ? `Titular: ${item.titular}` : 'Titular Principal / General';
                 if (!groupedByHolder[holderKey]) groupedByHolder[holderKey] = [];
                 groupedByHolder[holderKey].push(item);
             });
 
             Object.keys(groupedByHolder).forEach(holder => {
-                if (holder !== 'Consumos Generales') {
-                    const holderHeader = document.createElement('div');
-                    holderHeader.className = 'card-subgroup-header';
-                    holderHeader.innerText = `👤 ${holder}`;
-                    wrapper.appendChild(holderHeader);
-                }
+                const holderHeader = document.createElement('div');
+                holderHeader.className = 'card-subgroup-header';
+                holderHeader.innerText = `👤 ${holder}`;
+                wrapper.appendChild(holderHeader);
 
+                // 3. Agrupar por Tipo de Tarjeta (Visa, Mastercard, Amex, etc.)
+                const groupedByType = {};
                 groupedByHolder[holder].forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'data-item';
-                    div.innerHTML = `
-                        <div class="data-info">
-                            <span class="data-title">${item.detalle}</span>
-                            <span class="data-sub">${item.tipo_tarjeta ? item.tipo_tarjeta + ' • ' : ''}Venc: ${formatDateDisplay(item.vencimiento)}</span>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <span style="font-weight:700;" class="text-red">${formatMoney(item.monto)}</span>
-                            <button onclick="editExpense('${item.id}')" style="background:none; border:none; cursor:pointer;" title="Editar">✏️</button>
-                            <button onclick="deleteItem('${item.id}')" style="background:none; border:none; color:var(--danger); cursor:pointer;" title="Eliminar">🗑️</button>
-                        </div>
-                    `;
-                    wrapper.appendChild(div);
+                    const typeKey = item.tipo_tarjeta ? `Tarjeta ${item.tipo_tarjeta}` : 'Consumos Generales';
+                    if (!groupedByType[typeKey]) groupedByType[typeKey] = [];
+                    groupedByType[typeKey].push(item);
+                });
+
+                Object.keys(groupedByType).forEach(cardType => {
+                    if (cardType !== 'Consumos Generales') {
+                        const typeHeader = document.createElement('div');
+                        typeHeader.className = 'card-type-header';
+                        typeHeader.innerText = `💳 ${cardType}`;
+                        wrapper.appendChild(typeHeader);
+                    }
+
+                    groupedByType[cardType].forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'data-item';
+                        div.innerHTML = `
+                            <div class="data-info">
+                                <span class="data-title">${item.detalle}</span>
+                                <span class="data-sub">Venc: ${formatDateDisplay(item.vencimiento)}</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <span style="font-weight:700;" class="text-red">${formatMoney(item.monto)}</span>
+                                <button onclick="editExpense('${item.id}')" style="background:none; border:none; cursor:pointer;" title="Editar">✏️</button>
+                                <button onclick="deleteItem('${item.id}')" style="background:none; border:none; color:var(--danger); cursor:pointer;" title="Eliminar">🗑️</button>
+                            </div>
+                        `;
+                        wrapper.appendChild(div);
+                    });
                 });
             });
         });
@@ -1139,8 +1184,11 @@
         ingresosList.innerHTML = '';
         gastosList.innerHTML = '';
 
-        // Render Ingresos (Con Edición y Borrado)
+        // Render Ingresos
         const incomeItems = monthItems.filter(i => i.tipo === 'INCOME');
+        if (incomeItems.length === 0) {
+            ingresosList.innerHTML = `<div style="text-align:center; font-size:0.85rem; color:var(--text-muted); padding:16px;">Sin ingresos registrados en este mes</div>`;
+        }
         incomeItems.forEach(item => {
             const amount = Number(item.monto);
             totalInc += amount;
@@ -1173,7 +1221,6 @@
             if (!i.pagado) totalPagar += amount;
         });
 
-        // Separar gastos individuales de tarjetas
         let normalExpenses = allExpenseItems.filter(i => !cardCategories.includes(i.categoria));
         if (filterCat !== 'ALL') {
             if (!cardCategories.includes(filterCat)) {
@@ -1183,7 +1230,6 @@
             }
         }
 
-        // Render Gastos Individuales (Con Edición y Borrado)
         normalExpenses.forEach(item => {
             const amount = Number(item.monto);
             const div = document.createElement('div');
@@ -1205,7 +1251,6 @@
             gastosList.appendChild(div);
         });
 
-        // Filas Consolidadas de Tarjetas en la lista de Gastos
         cardCategories.forEach(cardCat => {
             if (filterCat === 'ALL' || filterCat === cardCat) {
                 const cardItems = allExpenseItems.filter(i => i.categoria === cardCat);
@@ -1264,7 +1309,42 @@
         }
     }
 
-    // GUARDAR INGRESO
+    // CAMBIO: FUNCIONALIDAD PARA BORRAR TODOS LOS INGRESOS GLOBALMENTE
+    async function deleteAllIncomesGlobal() {
+        const confirmFirst = confirm('⚠️ ¿Estás seguro de que deseas eliminar TODOS los ingresos de TODOS los meses?');
+        if (!confirmFirst) return;
+
+        const confirmSecond = confirm('Esta acción NO se puede deshacer. ¿Confirmar borrado completo de ingresos?');
+        if (!confirmSecond) return;
+
+        const { error } = await db.from('movimientos').delete().eq('tipo', 'INCOME');
+        if (error) {
+            alert('Error al borrar ingresos: ' + error.message);
+        } else {
+            alert('Todos los ingresos han sido eliminados correctamente.');
+            await fetchHomeSummary();
+        }
+    }
+
+    // CAMBIO: FUNCIONALIDAD PARA BORRAR TODOS LOS INGRESOS DEL MES ACTUAL
+    async function deleteAllIncomesCurrentMonth() {
+        if (!currentMonth) return;
+        
+        const confirmDelete = confirm(`¿Eliminar TODOS los ingresos del mes de ${currentMonth}?`);
+        if (!confirmDelete) return;
+
+        const { error } = await db.from('movimientos')
+            .delete()
+            .eq('tipo', 'INCOME')
+            .eq('mes', currentMonth);
+
+        if (error) {
+            alert('Error al eliminar los ingresos del mes: ' + error.message);
+        } else {
+            await fetchMonthData();
+        }
+    }
+
     async function saveIncome(e) {
         e.preventDefault();
         const id = document.getElementById('income-id').value;
@@ -1315,7 +1395,6 @@
         await fetchMonthData();
     }
 
-    // GUARDAR GASTO
     async function saveExpense(e) {
         e.preventDefault();
         const id = document.getElementById('expense-id').value;
@@ -1340,7 +1419,6 @@
         await fetchMonthData();
     }
 
-    // GUARDAR GASTO TARJETA (CALCULANDO VALOR DE CUOTA)
     async function saveCardExpense(e) {
         e.preventDefault();
         const cardSelected = document.getElementById('card-select').value;
