@@ -50,7 +50,8 @@
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
-
+	<!-- Cargar librería pdf.js para lectura de resúmenes en PDF -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
         body {
             background-color: var(--bg-body);
             color: var(--text-main);
@@ -714,22 +715,36 @@
             <!-- VISTA DEL MES SELECCIONADO -->
             <div id="view-month" class="view-section">
                 
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
-                    <button onclick="showHome()" style="background:none; border:none; color:var(--primary); font-size:1rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px;">
-                        ‹ Volver a Meses
-                    </button>
 
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn-warning-outline" onclick="openModalAlerts()">
-                            <span>🔔 Configurar Alertas Vencimiento</span>
-                        </button>
+<div class="month-actions-bar" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; background: var(--bg-card, #f8fafc); padding: 12px; border-radius: 8px; border: 1px solid var(--border, #e2e8f0);">
+    
+    <!-- 1. Botón para Borrar Todos los Datos -->
+    <button type="button" onclick="clearAllData()" class="btn-danger" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+        🗑️ Borrar Todos los Datos
+    </button>
 
-                        <!-- CAMBIO 1: BOTÓN PARA BORRAR TODOS LOS DATOS DEL MES -->
-                        <button class="btn-danger-outline" onclick="deleteAllMonthData()">
-                            <span>💥 Borrar Todo el Mes</span>
-                        </button>
-                    </div>
-                </div>
+    <!-- 2. Contenedor de Carga de PDF -->
+    <div style="display: flex; gap: 8px; align-items: center; background: rgba(37, 99, 235, 0.08); padding: 8px 12px; border-radius: 6px;">
+        <span style="font-size: 0.88rem; font-weight: 600;">📄 Importar Resumen PDF:</span>
+        
+        <!-- Selector de Tarjeta -->
+        <select id="pdf-card-select" style="padding: 6px; border-radius: 4px; border: 1px solid var(--border, #ccc);">
+            <option value="">-- Seleccionar Tarjeta --</option>
+            <option value="Tarjeta BBVA">Tarjeta BBVA</option>
+            <option value="Tarjeta ICBC">Tarjeta ICBC</option>
+            <option value="Tarjeta Galicia">Tarjeta Galicia</option>
+        </select>
+        
+        <!-- Input File Oculto -->
+        <input type="file" id="pdf-file-input" accept=".pdf" style="display: none;" onchange="handlePdfUpload(event)">
+        
+        <!-- Botón visible para lanzar la carga -->
+        <button type="button" onclick="triggerPdfSelect()" class="btn-primary" style="background: var(--primary, #2563eb); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">
+            Subir PDF
+        </button>
+    </div>
+
+</div>
 
                 <!-- ACCIONES RÁPIDAS -->
                 <div class="action-bar">
@@ -1707,6 +1722,135 @@
     }
 
     fetchHomeSummary();
+// Inicialización del motor de pdf.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+// ==========================================
+// 1. FUNCIÓN: BORRAR TODOS LOS DATOS
+// ==========================================
+async function clearAllData() {
+    const confirmFirst = confirm("⚠️ ¿ESTÁS SEGURO? Esta acción borrará TODOS los registros de la base de datos (ingresos, gastos y tarjetas).");
+    if (!confirmFirst) return;
+
+    const confirmSecond = confirm("Esta acción no se puede deshacer. Presiona Aceptar para confirmar el borrado total.");
+    if (!confirmSecond) return;
+
+    try {
+        // Borrar todas las filas de la tabla 'movimientos' en Supabase
+        const { error } = await db.from('movimientos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        
+        if (error) throw error;
+
+        alert("✅ Todos los datos han sido eliminados correctamente.");
+        
+        // Refrescar la vista actual
+        if (currentMonth) {
+            await fetchMonthData();
+        } else {
+            await fetchHomeSummary();
+        }
+    } catch (err) {
+        console.error("Error al borrar datos:", err);
+        alert("Error al intentar borrar los datos de la base de datos.");
+    }
+}
+
+// ==========================================
+// 2. FUNCIONES: SUBIR Y PROCESAR RESUMEN PDF
+// ==========================================
+
+// Valida que se haya seleccionado una tarjeta antes de abrir la ventana de archivos
+function triggerPdfSelect() {
+    const cardSelect = document.getElementById('pdf-card-select').value;
+    if (!cardSelect) {
+        alert("Por favor, selecciona primero a qué tarjeta pertenece el resumen PDF.");
+        return;
+    }
+    document.getElementById('pdf-file-input').click();
+}
+
+// Procesa el archivo PDF subido por el usuario
+async function handlePdfUpload(event) {
+    const file = event.target.files[0];
+    const selectedCard = document.getElementById('pdf-card-select').value;
+
+    if (!file || !selectedCard || !currentMonth) return;
+
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = "";
+
+        // Leer texto de todas las páginas del documento PDF
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(" ");
+            fullText += pageText + "\n";
+        }
+
+        // Extraer los consumos utilizando Expresión Regular
+        const parsedExpenses = extractExpensesFromText(fullText, selectedCard);
+
+        if (parsedExpenses.length === 0) {
+            alert("No se detectaron consumos con un formato válido dentro del PDF.");
+            event.target.value = '';
+            return;
+        }
+
+        const confirmUpload = confirm(`Se detectaron ${parsedExpenses.length} consumos para ${selectedCard}. ¿Deseas agregarlos al mes de ${currentMonth}?`);
+        if (!confirmUpload) {
+            event.target.value = '';
+            return;
+        }
+
+        // Insertar consumos extraídos en la base de datos Supabase
+        const { error } = await db.from('movimientos').insert(parsedExpenses);
+
+        if (error) throw error;
+
+        alert(`✅ Se agregaron ${parsedExpenses.length} consumos exitosamente a ${selectedCard}.`);
+        await fetchMonthData();
+
+    } catch (err) {
+        console.error("Error al procesar el PDF:", err);
+        alert("Hubo un error al leer el archivo PDF o al guardar los consumos.");
+    } finally {
+        event.target.value = ''; // Resetear el input de archivos
+    }
+}
+
+// Expresión regular que analiza las líneas de texto para extraer fecha, detalle e importe
+function extractExpensesFromText(text, cardCategory) {
+    const items = [];
+    
+    // Busca líneas con formato: FECHA (DD/MM) + DETALLE/COMERCIO + IMPORTE
+    const lineRegex = /(\d{2}\/\d{2})\s+([A-Za-z0-9\s\.\*\/#-]+?)\s+\$?\s*([\d\.\,]+)/g;
+    let match;
+
+    while ((match = lineRegex.exec(text)) !== null) {
+        const detail = match[2].trim();
+        let amountRaw = match[3];
+
+        // Limpiar comas y puntos para parsear a número flotante correctamente
+        amountRaw = amountRaw.replace(/\./g, '').replace(',', '.');
+        const amount = parseFloat(amountRaw);
+
+        if (!isNaN(amount) && amount > 0 && detail.length > 2) {
+            items.push({
+                mes: currentMonth,
+                tipo: 'EXPENSE',
+                categoria: cardCategory,
+                detalle: detail,
+                monto: amount,
+                pagado: false,
+                vencimiento: null
+            });
+        }
+    }
+
+    return items;
+}
 </script>
 </body>
 </html>
