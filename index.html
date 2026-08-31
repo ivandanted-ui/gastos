@@ -1095,18 +1095,15 @@
     }
 
     async function processPdfWithAI(file, defaultBank) {
-        // En una implementación con backend o API externa (ej. OpenAI, Tesseract o Gemini Vision),
-        // aquí se enviarían los bytes del PDF para OCR/Análisis.
-        // Simulamos la extracción estructurada de los consumos del resumen:
-        
+        // Extracción simulada con columnas 'pesos' y 'dolares' del resumen
         const extractedData = [
             {
                 categoria: cardCategories.includes(defaultBank) ? defaultBank : 'Tarjeta BBVA',
                 titular: 'Titular',
                 tipo_tarjeta: 'Visa',
                 detalle: 'Supermercado Coto (Resumen PDF)',
-                moneda: 'ARS',
-                monto: 45200.50,
+                pesos: 45200.50,
+                dolares: 0,
                 vencimiento: '2026-09-10'
             },
             {
@@ -1114,8 +1111,8 @@
                 titular: 'Adicional',
                 tipo_tarjeta: 'Mastercard',
                 detalle: 'Suscripción Streaming (Resumen PDF)',
-                moneda: 'USD',
-                monto: 12.99,
+                pesos: 0,
+                dolares: 12.99,
                 vencimiento: '2026-09-10'
             }
         ];
@@ -1124,12 +1121,12 @@
             mes: currentMonth,
             tipo: 'EXPENSE',
             categoria: item.categoria,
-            detalle: item.moneda === 'USD' ? `${item.detalle} (USD $${item.monto})` : item.detalle,
-            monto: item.moneda === 'USD' ? item.monto * 1200 : item.monto, // Si es USD se aplica cotización
+            detalle: item.detalle,
+            pesos: item.pesos,
+            dolares: item.dolares,
             vencimiento: item.vencimiento,
             titular: item.titular,
             tipo_tarjeta: item.tipo_tarjeta,
-            moneda: item.moneda,
             pagado: false
         }));
 
@@ -1150,7 +1147,7 @@
         if (!item) return;
         document.getElementById('income-id').value = item.id;
         document.getElementById('income-detail').value = item.detalle;
-        document.getElementById('income-amount').value = item.monto;
+        document.getElementById('income-amount').value = getItemAmount(item);
         document.getElementById('income-venc').value = item.vencimiento || '';
         document.getElementById('modal-income-title').innerText = '✏️ Editar Ingreso';
         document.getElementById('frequent-income-wrapper').style.display = 'none';
@@ -1170,7 +1167,7 @@
         document.getElementById('expense-id').value = item.id;
         document.getElementById('expense-cat').value = item.categoria;
         document.getElementById('expense-detail').value = item.detalle;
-        document.getElementById('expense-amount').value = item.monto;
+        document.getElementById('expense-amount').value = getItemAmount(item);
         document.getElementById('expense-venc').value = item.vencimiento || '';
         document.getElementById('modal-expense-title').innerText = '✏️ Editar Gasto';
         openModal('modal-expense', false);
@@ -1235,6 +1232,12 @@
         return dateStr;
     }
 
+    function getItemAmount(item) {
+        const pesos = Number(item.pesos || 0);
+        const dolares = Number(item.dolares || 0);
+        return pesos + (dolares > 0 ? dolares * 1200 : 0);
+    }
+
     function updateCardFormFields() {
         const selectedCard = document.getElementById('card-select').value;
         const holderGroup = document.getElementById('group-card-holder');
@@ -1269,7 +1272,7 @@
             monthsList.forEach(month => {
                 const items = data ? data.filter(i => i.mes === month) : [];
                 let inc = 0, exp = 0;
-                items.forEach(i => i.tipo === 'INCOME' ? inc += Number(i.monto) : exp += Number(i.monto));
+                items.forEach(i => i.tipo === 'INCOME' ? inc += getItemAmount(i) : exp += getItemAmount(i));
                 const diff = inc - exp;
 
                 const card = document.createElement('div');
@@ -1317,7 +1320,7 @@
         renderCardSection();
     }
 
-    /* RENDERIZADO DETALLADO CON TODOS LOS CAMPOS DE LA TARJETA */
+    /* RENDERIZADO DETALLADO CON SOPORTE DE COLUMNAS PESOS Y DOLARES */
     function renderCardSection() {
         const wrapper = document.getElementById('card-details-wrapper');
         let cardItems = monthItems.filter(i => cardCategories.includes(i.categoria));
@@ -1367,7 +1370,7 @@
 
                 Object.keys(groupedByType).forEach(cardType => {
                     const itemsInType = groupedByType[cardType];
-                    const cardTypeTotal = itemsInType.reduce((sum, item) => sum + Number(item.monto), 0);
+                    const cardTypeTotal = itemsInType.reduce((sum, item) => sum + getItemAmount(item), 0);
 
                     const typeHeader = document.createElement('div');
                     typeHeader.className = 'card-type-header';
@@ -1380,8 +1383,15 @@
                     itemsInType.forEach(item => {
                         const div = document.createElement('div');
                         div.className = 'data-item';
-                        const currencyTag = item.moneda ? item.moneda : 'ARS';
+                        const amountVal = getItemAmount(item);
                         
+                        let currencyText = '';
+                        if (Number(item.dolares || 0) > 0) {
+                            currencyText = `U$S ${item.dolares}`;
+                        } else {
+                            currencyText = `$ ${item.pesos || 0}`;
+                        }
+
                         div.innerHTML = `
                             <div class="data-info">
                                 <span class="data-title">${item.detalle}</span>
@@ -1389,12 +1399,12 @@
                                     <strong>Tarjeta:</strong> ${item.categoria} | 
                                     <strong>Titular:</strong> ${item.titular || 'Titular'} | 
                                     <strong>Tipo:</strong> ${item.tipo_tarjeta || 'General'} | 
-                                    <strong>Moneda:</strong> ${currencyTag} | 
+                                    <strong>Monto:</strong> ${currencyText} | 
                                     <strong>Vencimiento:</strong> ${formatDateDisplay(item.vencimiento)}
                                 </span>
                             </div>
                             <div style="display:flex; align-items:center; gap:12px;">
-                                <span style="font-weight:700;" class="text-red">${formatMoney(item.monto)}</span>
+                                <span style="font-weight:700;" class="text-red">${formatMoney(amountVal)}</span>
                                 <button onclick="editExpense('${item.id}')" style="background:none; border:none; cursor:pointer;" title="Editar">✏️</button>
                                 <button onclick="deleteItem('${item.id}')" style="background:none; border:none; color:var(--danger); cursor:pointer;" title="Eliminar">🗑️</button>
                             </div>
@@ -1420,7 +1430,7 @@
             ingresosList.innerHTML = `<div style="text-align:center; font-size:0.85rem; color:var(--text-muted); padding:16px;">Sin ingresos registrados en este mes</div>`;
         }
         incomeItems.forEach(item => {
-            const amount = Number(item.monto);
+            const amount = getItemAmount(item);
             totalInc += amount;
             if (!item.pagado) totalCobrar += amount;
 
@@ -1445,7 +1455,7 @@
 
         const allExpenseItems = monthItems.filter(i => i.tipo === 'EXPENSE');
         allExpenseItems.forEach(i => {
-            const amount = Number(i.monto);
+            const amount = getItemAmount(i);
             totalExp += amount;
             if (!i.pagado) totalPagar += amount;
         });
@@ -1460,7 +1470,7 @@
         }
 
         normalExpenses.forEach(item => {
-            const amount = Number(item.monto);
+            const amount = getItemAmount(item);
             const div = document.createElement('div');
             div.className = 'data-item';
             div.innerHTML = `
@@ -1484,7 +1494,7 @@
             if (filterCat === 'ALL' || filterCat === cardCat) {
                 const cardItems = allExpenseItems.filter(i => i.categoria === cardCat);
                 if (cardItems.length > 0) {
-                    const cardTotal = cardItems.reduce((acc, i) => acc + Number(i.monto), 0);
+                    const cardTotal = cardItems.reduce((acc, i) => acc + getItemAmount(i), 0);
                     const allPaid = cardItems.every(i => i.pagado);
 
                     const div = document.createElement('div');
@@ -1603,7 +1613,8 @@
         if (id) {
             const payload = {
                 detalle: detail,
-                monto: amount,
+                pesos: amount,
+                dolares: 0,
                 vencimiento: venc
             };
             await db.from('movimientos').update(payload).eq('id', id);
@@ -1618,7 +1629,8 @@
                         tipo: 'INCOME',
                         categoria: 'Ingresos',
                         detalle: detail,
-                        monto: amount,
+                        pesos: amount,
+                        dolares: 0,
                         vencimiento: venc,
                         pagado: false
                     });
@@ -1629,7 +1641,8 @@
                     tipo: 'INCOME',
                     categoria: 'Ingresos',
                     detalle: detail,
-                    monto: amount,
+                    pesos: amount,
+                    dolares: 0,
                     vencimiento: venc,
                     pagado: false
                 });
@@ -1645,12 +1658,14 @@
     async function saveExpense(e) {
         e.preventDefault();
         const id = document.getElementById('expense-id').value;
+        const amount = parseFloat(document.getElementById('expense-amount').value);
         const payload = {
             mes: currentMonth,
             tipo: 'EXPENSE',
             categoria: document.getElementById('expense-cat').value,
             detalle: document.getElementById('expense-detail').value,
-            monto: parseFloat(document.getElementById('expense-amount').value),
+            pesos: amount,
+            dolares: 0,
             vencimiento: document.getElementById('expense-venc').value,
             pagado: false
         };
@@ -1674,17 +1689,20 @@
         const rawAmount = parseFloat(document.getElementById('card-total-amount').value);
         const usdRate = parseFloat(document.getElementById('card-usd-rate').value) || 0;
         const venc = document.getElementById('card-venc').value;
-        const holder = document.getElementById('card-holder').value; // 'Titular' o 'Adicional'
+        const holder = document.getElementById('card-holder').value;
         const type = document.getElementById('card-type').value;
         const installments = parseInt(document.getElementById('card-installments').value);
 
-        let totalInArs = rawAmount;
+        let pesosVal = 0;
+        let dolaresVal = 0;
+
         if (currency === 'USD') {
-            totalInArs = rawAmount * usdRate;
+            dolaresVal = rawAmount / installments;
             detail += ` (USD $${rawAmount.toFixed(2)} @ $${usdRate})`;
+        } else {
+            pesosVal = rawAmount / installments;
         }
 
-        const installmentAmount = totalInArs / installments;
         const startIndex = monthsList.indexOf(currentMonth);
         const itemsToInsert = [];
 
@@ -1695,11 +1713,11 @@
                 tipo: 'EXPENSE',
                 categoria: cardSelected,
                 detalle: installments > 1 ? `${detail} (${i + 1}/${installments})` : detail,
-                monto: installmentAmount,
+                pesos: pesosVal,
+                dolares: dolaresVal,
                 vencimiento: venc,
                 titular: holder,
                 tipo_tarjeta: type,
-                moneda: currency,
                 pagado: false
             });
         }
@@ -1741,7 +1759,7 @@
             const day = localStorage.getItem(`cfg_due_${key}`) || '10';
             
             const cardExpenses = monthItems.filter(i => i.categoria === card);
-            const totalPending = cardExpenses.filter(i => !i.pagado).reduce((acc, i) => acc + Number(i.monto), 0);
+            const totalPending = cardExpenses.filter(i => !i.pagado).reduce((acc, i) => acc + getItemAmount(i), 0);
 
             const div = document.createElement('div');
             div.style.padding = '10px';
@@ -1785,8 +1803,8 @@
             return day > 0 && day <= 10;
         });
 
-        const earlyTotal = earlyExpenses.reduce((acc, i) => acc + Number(i.monto), 0);
-        const restTotal = expenses.reduce((acc, i) => acc + Number(i.monto), 0) - earlyTotal;
+        const earlyTotal = earlyExpenses.reduce((acc, i) => acc + getItemAmount(i), 0);
+        const restTotal = expenses.reduce((acc, i) => acc + getItemAmount(i), 0) - earlyTotal;
 
         if (firstTenDaysChart) firstTenDaysChart.destroy();
         const ctx1 = document.getElementById('firstTenDaysChart').getContext('2d');
@@ -1800,7 +1818,7 @@
         });
 
         const categories = {};
-        expenses.forEach(i => categories[i.categoria] = (categories[i.categoria] || 0) + Number(i.monto));
+        expenses.forEach(i => categories[i.categoria] = (categories[i.categoria] || 0) + getItemAmount(i));
 
         if (categoryChart) categoryChart.destroy();
         const ctx2 = document.getElementById('categoryChart').getContext('2d');
