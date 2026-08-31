@@ -665,6 +665,7 @@
 <body>
 
 <div class="app-layout">
+    <!-- NAVIGATION SIDEBAR -->
     <aside class="sidebar">
         <div>
             <div class="sidebar-brand">
@@ -688,6 +689,7 @@
         </div>
     </aside>
 
+    <!-- MAIN CONTENT AREA -->
     <main class="main-wrapper">
         <header class="topbar">
             <h1 class="topbar-title" id="app-header-title">Resumen Anual</h1>
@@ -698,6 +700,7 @@
 
         <div class="content-container">
 
+            <!-- VISTA HOME (SELECCIÓN DE MESES) -->
             <div id="view-home" class="view-section active">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
                     <p style="color: var(--text-muted);">Selecciona un mes para gestionar tus finanzas:</p>
@@ -708,6 +711,7 @@
                 <div class="months-grid" id="months-container"></div>
             </div>
 
+            <!-- VISTA DEL MES SELECCIONADO -->
             <div id="view-month" class="view-section">
                 
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
@@ -726,6 +730,7 @@
                     </div>
                 </div>
 
+                <!-- ACCIONES RÁPIDAS -->
                 <div class="action-bar">
                     <div class="btn-action-card" onclick="openModalIncomeForCreate()">
                         <div class="icon-circle" style="background: var(--success);">+</div>
@@ -745,6 +750,7 @@
                     </div>
                 </div>
 
+                <!-- MÉTRICAS CLAVE -->
                 <div class="metrics-grid">
                     <div class="card-metric"><h3>Ingresos Totales</h3><div class="amount text-green" id="total-ingresos">$0</div></div>
                     <div class="card-metric"><h3>Por Cobrar</h3><div class="amount text-blue" id="total-cobrar">$0</div></div>
@@ -753,6 +759,7 @@
                     <div class="card-metric"><h3>Balance del Mes</h3><div class="amount" id="total-diferencia">$0</div></div>
                 </div>
 
+                <!-- GRÁFICOS -->
                 <div class="charts-wrapper" id="charts-wrapper">
                     <div class="chart-card">
                         <h3>Gastos Primeros 10 Días</h3>
@@ -764,8 +771,10 @@
                     </div>
                 </div>
 
+                <!-- TABLAS / PANELES EN COLUMNAS -->
                 <div class="desktop-columns">
                     
+                    <!-- PANEL INGRESOS -->
                     <div class="panel-box">
                         <div class="panel-header text-green">
                             <span>💰 Ingresos del Mes</span>
@@ -776,6 +785,7 @@
                         <div id="ingresos-list"></div>
                     </div>
 
+                    <!-- PANEL GASTOS -->
                     <div class="panel-box">
                         <div class="panel-header text-red">
                             <span>💸 Gastos del Mes</span>
@@ -793,6 +803,7 @@
                     </div>
                 </div>
 
+                <!-- DETALLE ESPECÍFICO DE TARJETAS DE CRÉDITO -->
                 <div class="full-width-column">
                     <div class="panel-box" style="padding: 20px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
@@ -814,6 +825,7 @@
     </main>
 </div>
 
+<!-- MODAL INGRESO -->
 <div class="modal-overlay" id="modal-income">
     <div class="modal">
         <div class="modal-header">
@@ -836,6 +848,7 @@
     </div>
 </div>
 
+<!-- MODAL GASTO GENERAL -->
 <div class="modal-overlay" id="modal-expense">
     <div class="modal">
         <div class="modal-header">
@@ -863,6 +876,7 @@
     </div>
 </div>
 
+<!-- MODAL GASTO EN TARJETA (CON SOPORTE PARA USD) -->
 <div class="modal-overlay" id="modal-card">
     <div class="modal">
         <div class="modal-header">
@@ -923,6 +937,7 @@
     </div>
 </div>
 
+<!-- MODAL DE CONFIGURACIÓN Y NOTIFICACIONES DE VENCIMIENTO -->
 <div class="modal-overlay" id="modal-alerts">
     <div class="modal">
         <div class="modal-header">
@@ -1430,7 +1445,7 @@
         }
     }
 
-    // CAMBIO APLICADO: BORRA TODOS LOS DATOS (INGRESOS Y GASTOS) DE TODOS LOS MESES
+    // CORRECCIÓN APLICADA: .gte('id', 0) para compatibilidad con columnas ID de tipo bigint
     async function deleteAllDataGlobal() {
         const confirmFirst = confirm('⚠️ ¿Estás seguro de que deseas eliminar TODOS los datos (Ingresos y Gastos) de TODOS los meses?');
         if (!confirmFirst) return;
@@ -1438,7 +1453,8 @@
         const confirmSecond = confirm('Esta acción NO se puede deshacer. ¿Confirmar el borrado total de la base de datos?');
         if (!confirmSecond) return;
 
-        const { error } = await db.from('movimientos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        const { error } = await db.from('movimientos').delete().gte('id', 0);
+        
         if (error) {
             alert('Error al borrar los datos: ' + error.message);
         } else {
