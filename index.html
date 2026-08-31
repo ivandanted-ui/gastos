@@ -59,14 +59,14 @@
             overflow-x: hidden;
         }
 
-        /* LAYOUT PRINCIPAL (DESKTOP FIRST) */
+        /* LAYOUT PRINCIPAL */
         .app-layout {
             display: flex;
             width: 100vw;
             min-height: 100vh;
         }
 
-        /* SIDEBAR (DESKTOP) */
+        /* SIDEBAR */
         .sidebar {
             width: 260px;
             background-color: var(--sidebar-bg);
@@ -376,6 +376,28 @@
         .data-title { font-size: 0.95rem; font-weight: 600; }
         .data-sub { font-size: 0.78rem; color: var(--text-muted); }
 
+        /* GROUP HEADERS FOR CARDS */
+        .card-group-header {
+            background: var(--input-bg);
+            padding: 10px 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--primary);
+            border-bottom: 1px solid var(--border);
+            border-top: 1px solid var(--border);
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .card-subgroup-header {
+            background: rgba(37, 99, 235, 0.05);
+            padding: 8px 20px 8px 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+        }
+
         /* BADGES */
         .badge {
             padding: 6px 12px;
@@ -416,7 +438,7 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.06);
         }
 
-        /* MODALES RESPONSIVOS */
+        /* MODALES */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -503,6 +525,13 @@
             outline: none;
         }
 
+        .calculated-hint {
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
         .btn-submit {
             width: 100%;
             padding: 14px;
@@ -520,17 +549,14 @@
         .text-red { color: var(--danger); }
         .text-blue { color: var(--primary); }
 
-        /* REGLAS RESPONSIVAS PARA MÓVILES (< 768px) */
+        /* REGLAS RESPONSIVAS PARA MÓVILES */
         @media (max-width: 768px) {
             .app-layout { flex-direction: column; }
             
             .sidebar {
                 position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                width: 100%;
-                height: 65px;
+                bottom: 0; left: 0; right: 0;
+                width: 100%; height: 65px;
                 padding: 0;
                 flex-direction: row;
                 background-color: var(--card-bg);
@@ -614,7 +640,6 @@
 
     <!-- MAIN CONTENT AREA -->
     <main class="main-wrapper">
-        <!-- TOPBAR HEADER -->
         <header class="topbar">
             <h1 class="topbar-title" id="app-header-title">Resumen Anual</h1>
             <div class="topbar-actions">
@@ -641,11 +666,11 @@
 
                 <!-- ACCIONES RÁPIDAS -->
                 <div class="action-bar">
-                    <div class="btn-action-card" onclick="openModal('modal-income')">
+                    <div class="btn-action-card" onclick="openModalIncomeForCreate()">
                         <div class="icon-circle" style="background: var(--success);">+</div>
                         <span>Nuevo Ingreso</span>
                     </div>
-                    <div class="btn-action-card" onclick="openModal('modal-expense')">
+                    <div class="btn-action-card" onclick="openModalExpenseForCreate()">
                         <div class="icon-circle" style="background: var(--danger);">-</div>
                         <span>Nuevo Gasto</span>
                     </div>
@@ -713,7 +738,8 @@
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
                             <span style="font-size: 1.1rem; font-weight: 700;">💳 Detalle Específico por Tarjeta</span>
                             <div class="card-tabs">
-                                <button class="tab-btn active" id="tab-bbva" onclick="switchCardTab('Tarjeta BBVA')">BBVA</button>
+                                <button class="tab-btn active" id="tab-all-cards" onclick="switchCardTab('ALL')">Todas</button>
+                                <button class="tab-btn" id="tab-bbva" onclick="switchCardTab('Tarjeta BBVA')">BBVA</button>
                                 <button class="tab-btn" id="tab-icbc" onclick="switchCardTab('Tarjeta ICBC')">ICBC</button>
                                 <button class="tab-btn" id="tab-galicia" onclick="switchCardTab('Tarjeta Galicia')">Galicia</button>
                             </div>
@@ -728,7 +754,7 @@
     </main>
 </div>
 
-<!-- MODAL INGRESO (CON OPCIÓN DE INGRESO FRECUENTE) -->
+<!-- MODAL INGRESO -->
 <div class="modal-overlay" id="modal-income">
     <div class="modal">
         <div class="modal-header">
@@ -739,9 +765,9 @@
             <input type="hidden" id="income-id">
             <div class="form-group"><label>Detalle</label><input type="text" id="income-detail" required placeholder="Ej: Sueldo"></div>
             <div class="form-group"><label>Monto ($)</label><input type="number" step="0.01" id="income-amount" required placeholder="0.00"></div>
-            <div class="form-group"><label>Vencimiento</label><input type="text" id="income-venc" placeholder="Ej: 10/8"></div>
+            <!-- CAMBIO: FECHA DE COBRO CON CALENDARIO -->
+            <div class="form-group"><label>Fecha de Cobro</label><input type="date" id="income-venc"></div>
             
-            <!-- CHECKBOX INGRESO FRECUENTE -->
             <div class="checkbox-group" id="frequent-income-wrapper">
                 <input type="checkbox" id="income-frequent">
                 <label for="income-frequent">🔄 ¿Es un ingreso frecuente? (Repetir en los meses siguientes)</label>
@@ -774,7 +800,8 @@
             </div>
             <div class="form-group"><label>Detalle</label><input type="text" id="expense-detail" required placeholder="Ej: Servicio de luz"></div>
             <div class="form-group"><label>Monto ($)</label><input type="number" step="0.01" id="expense-amount" required placeholder="0.00"></div>
-            <div class="form-group"><label>Vencimiento</label><input type="text" id="expense-venc" placeholder="Ej: 15/8"></div>
+            <!-- CAMBIO: FECHA DE VENCIMIENTO CON CALENDARIO -->
+            <div class="form-group"><label>Fecha de Vencimiento</label><input type="date" id="expense-venc"></div>
             <button type="submit" class="btn-submit" style="background: var(--danger);">Guardar Gasto</button>
         </form>
     </div>
@@ -790,7 +817,7 @@
         <form id="form-card" onsubmit="saveCardExpense(event)">
             <input type="hidden" id="card-id">
             <div class="form-group">
-                <label>Tarjeta</label>
+                <label>Tarjeta / Banco</label>
                 <select id="card-select" onchange="updateCardFormFields()" required>
                     <option value="Tarjeta BBVA">Tarjeta BBVA</option>
                     <option value="Tarjeta ICBC">Tarjeta ICBC</option>
@@ -805,30 +832,33 @@
                 </select>
             </div>
             <div class="form-group" id="group-card-type">
-                <label>Tipo</label>
+                <label>Tipo de Tarjeta</label>
                 <select id="card-type"></select>
             </div>
             <div class="form-group"><label>Detalle</label><input type="text" id="card-detail" placeholder="Ej: Compra Electrónica" required></div>
-            <div class="form-group"><label>Monto Cuota ($)</label><input type="number" step="0.01" id="card-amount" placeholder="0.00" required></div>
-            <div class="form-group" id="group-card-installments">
-                <label>Cuotas</label>
-                <select id="card-installments">
-                    <option value="1">1 pago</option>
-                    <option value="3">3 cuotas</option>
-                    <option value="6">6 cuotas</option>
-                    <option value="12">12 cuotas</option>
-                    <option value="18">18 cuotas</option>
-                    <option value="24">24 cuotas</option>
-                </select>
+            
+            <!-- CAMBIO: MONTO TOTAL Y CÁLCULO DE CUOTA -->
+            <div class="form-group">
+                <label>Monto Total de la Compra ($)</label>
+                <input type="number" step="0.01" id="card-total-amount" placeholder="0.00" oninput="calculateInstallmentAmount()" required>
             </div>
-            <div class="form-group"><label>Vencimiento Cuota 1</label><input type="text" id="card-venc" placeholder="Ej: 20/8" required></div>
+            
+            <!-- CAMBIO: CUOTAS DEL 1 AL 24 -->
+            <div class="form-group" id="group-card-installments">
+                <label>Cantidad de Cuotas (1 a 24)</label>
+                <select id="card-installments" onchange="calculateInstallmentAmount()"></select>
+            </div>
+
+            <div class="calculated-hint" id="installment-hint">Valor por cuota: $0.00</div>
+
+            <!-- CAMBIO: FECHA CON CALENDARIO -->
+            <div class="form-group" style="margin-top: 12px;"><label>Fecha Vencimiento Cuota 1</label><input type="date" id="card-venc" required></div>
             <button type="submit" class="btn-submit" style="background: var(--primary);">Guardar Gasto Tarjeta</button>
         </form>
     </div>
 </div>
 
 <script>
-    // CREDENCIALES SUPABASE CONFIGURADAS
     const SUPABASE_URL = "https://clmfeejngfevhztyldwk.supabase.co/";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsbWZlZWpuZ2Zldmh6dHlsZHdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2OTY1NjQsImV4cCI6MjEwMzI3MjU2NH0.MkwnhK7A51jEzZ5u-cEMPDWcrkH9KivvOUqqVr1JJJE";
     const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -837,8 +867,21 @@
     const cardCategories = ["Tarjeta BBVA", "Tarjeta ICBC", "Tarjeta Galicia"];
     let currentMonth = "";
     let monthItems = [];
-    let currentCardSelected = "Tarjeta BBVA";
+    let currentCardSelected = "ALL";
     let categoryChart, firstTenDaysChart;
+
+    // Inicializar opciones de cuotas del 1 al 24
+    function initInstallmentsSelect() {
+        const select = document.getElementById('card-installments');
+        select.innerHTML = '';
+        for (let i = 1; i <= 24; i++) {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.innerText = i === 1 ? '1 pago (Sin cuotas)' : `${i} cuotas`;
+            select.appendChild(opt);
+        }
+    }
+    initInstallmentsSelect();
 
     function toggleTheme() {
         document.body.classList.toggle('dark-theme');
@@ -850,14 +893,66 @@
         document.getElementById('charts-wrapper').classList.toggle('visible');
     }
 
+    // Modal Ingreso Creación
+    function openModalIncomeForCreate() {
+        document.getElementById('form-income').reset();
+        document.getElementById('income-id').value = '';
+        document.getElementById('modal-income-title').innerText = '➕ Nuevo Ingreso';
+        document.getElementById('frequent-income-wrapper').style.display = 'flex';
+        openModal('modal-income', false);
+    }
+
+    // Modal Ingreso Edición
+    function editIncome(id) {
+        const item = monthItems.find(i => i.id === id);
+        if (!item) return;
+        document.getElementById('income-id').value = item.id;
+        document.getElementById('income-detail').value = item.detalle;
+        document.getElementById('income-amount').value = item.monto;
+        document.getElementById('income-venc').value = item.vencimiento || '';
+        document.getElementById('modal-income-title').innerText = '✏️ Editar Ingreso';
+        document.getElementById('frequent-income-wrapper').style.display = 'none';
+        openModal('modal-income', false);
+    }
+
+    // Modal Gasto Creación
+    function openModalExpenseForCreate() {
+        document.getElementById('form-expense').reset();
+        document.getElementById('expense-id').value = '';
+        document.getElementById('modal-expense-title').innerText = '➖ Nuevo Gasto';
+        openModal('modal-expense', false);
+    }
+
+    // Modal Gasto Edición
+    function editExpense(id) {
+        const item = monthItems.find(i => i.id === id);
+        if (!item) return;
+        document.getElementById('expense-id').value = item.id;
+        document.getElementById('expense-cat').value = item.categoria;
+        document.getElementById('expense-detail').value = item.detalle;
+        document.getElementById('expense-amount').value = item.monto;
+        document.getElementById('expense-venc').value = item.vencimiento || '';
+        document.getElementById('modal-expense-title').innerText = '✏️ Editar Gasto';
+        openModal('modal-expense', false);
+    }
+
+    // Modal Tarjeta Creación
     function openModalCardForCreate() {
         document.getElementById('form-card').reset();
         document.getElementById('card-id').value = '';
         document.getElementById('modal-card-title').innerText = '💳 Cargar Gasto en Tarjeta';
-        document.getElementById('card-select').value = currentCardSelected;
+        document.getElementById('card-select').value = currentCardSelected !== 'ALL' ? currentCardSelected : 'Tarjeta BBVA';
         document.getElementById('group-card-installments').style.display = 'flex';
         updateCardFormFields();
+        calculateInstallmentAmount();
         openModal('modal-card', false);
+    }
+
+    function calculateInstallmentAmount() {
+        const total = parseFloat(document.getElementById('card-total-amount').value) || 0;
+        const installments = parseInt(document.getElementById('card-installments').value) || 1;
+        const perInstallment = total / installments;
+        document.getElementById('installment-hint').innerText = `Valor por cuota: ${formatMoney(perInstallment)} (${installments} cuota${installments > 1 ? 's' : ''})`;
     }
 
     function openModal(id, resetForm = true) {
@@ -876,6 +971,15 @@
 
     function closeModal(id) { document.getElementById(id).classList.remove('active'); }
     function formatMoney(amount) { return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(amount); }
+
+    function formatDateDisplay(dateStr) {
+        if (!dateStr) return '-';
+        if (dateStr.includes('-')) {
+            const parts = dateStr.split('-');
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}`;
+        }
+        return dateStr;
+    }
 
     function updateCardFormFields() {
         const selectedCard = document.getElementById('card-select').value;
@@ -954,15 +1058,22 @@
 
     function switchCardTab(cardName) {
         currentCardSelected = cardName;
+        document.getElementById('tab-all-cards').classList.toggle('active', cardName === 'ALL');
         document.getElementById('tab-bbva').classList.toggle('active', cardName === 'Tarjeta BBVA');
         document.getElementById('tab-icbc').classList.toggle('active', cardName === 'Tarjeta ICBC');
         document.getElementById('tab-galicia').classList.toggle('active', cardName === 'Tarjeta Galicia');
         renderCardSection();
     }
 
+    // RENDERING AGRUPADO DE TARJETAS POR BANCO, TARJETA Y TITULAR
     function renderCardSection() {
         const wrapper = document.getElementById('card-details-wrapper');
-        const cardItems = monthItems.filter(i => i.categoria === currentCardSelected);
+        let cardItems = monthItems.filter(i => cardCategories.includes(i.categoria));
+
+        if (currentCardSelected !== 'ALL') {
+            cardItems = cardItems.filter(i => i.categoria === currentCardSelected);
+        }
+
         wrapper.innerHTML = '';
 
         if (cardItems.length === 0) {
@@ -970,20 +1081,52 @@
             return;
         }
 
+        // Agrupar por Banco / Categoria
+        const groupedByBank = {};
         cardItems.forEach(item => {
-            const div = document.createElement('div');
-            div.className = 'data-item';
-            div.innerHTML = `
-                <div class="data-info">
-                    <span class="data-title">${item.detalle}</span>
-                    <span class="data-sub">${item.titular ? item.titular + ' • ' : ''}${item.tipo_tarjeta || ''} ${item.vencimiento ? ' • Venc: ' + item.vencimiento : ''}</span>
-                </div>
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <span style="font-weight:700;" class="text-red">${formatMoney(item.monto)}</span>
-                    <button onclick="deleteItem('${item.id}')" style="background:none; border:none; color:var(--danger); cursor:pointer;">🗑️</button>
-                </div>
-            `;
-            wrapper.appendChild(div);
+            if (!groupedByBank[item.categoria]) groupedByBank[item.categoria] = [];
+            groupedByBank[item.categoria].push(item);
+        });
+
+        Object.keys(groupedByBank).forEach(bank => {
+            const bankHeader = document.createElement('div');
+            bankHeader.className = 'card-group-header';
+            bankHeader.innerText = `🏦 ${bank}`;
+            wrapper.appendChild(bankHeader);
+
+            // Agrupar dentro del banco por Titular
+            const groupedByHolder = {};
+            groupedByBank[bank].forEach(item => {
+                const holderKey = item.titular ? `Titular: ${item.titular}` : 'Consumos Generales';
+                if (!groupedByHolder[holderKey]) groupedByHolder[holderKey] = [];
+                groupedByHolder[holderKey].push(item);
+            });
+
+            Object.keys(groupedByHolder).forEach(holder => {
+                if (holder !== 'Consumos Generales') {
+                    const holderHeader = document.createElement('div');
+                    holderHeader.className = 'card-subgroup-header';
+                    holderHeader.innerText = `👤 ${holder}`;
+                    wrapper.appendChild(holderHeader);
+                }
+
+                groupedByHolder[holder].forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'data-item';
+                    div.innerHTML = `
+                        <div class="data-info">
+                            <span class="data-title">${item.detalle}</span>
+                            <span class="data-sub">${item.tipo_tarjeta ? item.tipo_tarjeta + ' • ' : ''}Venc: ${formatDateDisplay(item.vencimiento)}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span style="font-weight:700;" class="text-red">${formatMoney(item.monto)}</span>
+                            <button onclick="editExpense('${item.id}')" style="background:none; border:none; cursor:pointer;" title="Editar">✏️</button>
+                            <button onclick="deleteItem('${item.id}')" style="background:none; border:none; color:var(--danger); cursor:pointer;" title="Eliminar">🗑️</button>
+                        </div>
+                    `;
+                    wrapper.appendChild(div);
+                });
+            });
         });
     }
 
@@ -996,7 +1139,7 @@
         ingresosList.innerHTML = '';
         gastosList.innerHTML = '';
 
-        // Render Ingresos
+        // Render Ingresos (Con Edición y Borrado)
         const incomeItems = monthItems.filter(i => i.tipo === 'INCOME');
         incomeItems.forEach(item => {
             const amount = Number(item.monto);
@@ -1008,14 +1151,15 @@
             div.innerHTML = `
                 <div class="data-info">
                     <span class="data-title">${item.detalle}</span>
-                    <span class="data-sub">Venc: ${item.vencimiento || '-'}</span>
+                    <span class="data-sub">Fecha Cobro: ${formatDateDisplay(item.vencimiento)}</span>
                 </div>
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <span style="font-weight:700;">${formatMoney(amount)}</span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-weight:700; margin-right:4px;">${formatMoney(amount)}</span>
                     <span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="toggleStatus('${item.id}', ${!item.pagado})">
                         ${item.pagado ? 'Cobrado' : 'Pendiente'}
                     </span>
-                    <button onclick="deleteItem('${item.id}')" style="background:none; border:none; color:var(--danger); cursor:pointer;">🗑️</button>
+                    <button onclick="editIncome('${item.id}')" style="background:none; border:none; cursor:pointer;" title="Editar">✏️</button>
+                    <button onclick="deleteItem('${item.id}')" style="background:none; border:none; color:var(--danger); cursor:pointer;" title="Eliminar">🗑️</button>
                 </div>
             `;
             ingresosList.appendChild(div);
@@ -1039,7 +1183,7 @@
             }
         }
 
-        // Render Gastos Individuales
+        // Render Gastos Individuales (Con Edición y Borrado)
         normalExpenses.forEach(item => {
             const amount = Number(item.monto);
             const div = document.createElement('div');
@@ -1047,14 +1191,15 @@
             div.innerHTML = `
                 <div class="data-info">
                     <span class="data-title">${item.detalle}</span>
-                    <span class="data-sub">${item.categoria} • Venc: ${item.vencimiento || '-'}</span>
+                    <span class="data-sub">${item.categoria} • Venc: ${formatDateDisplay(item.vencimiento)}</span>
                 </div>
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <span style="font-weight:700;">${formatMoney(amount)}</span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-weight:700; margin-right:4px;">${formatMoney(amount)}</span>
                     <span class="badge ${item.pagado ? 'badge-paid' : 'badge-pending'}" onclick="toggleStatus('${item.id}', ${!item.pagado})">
                         ${item.pagado ? 'Pagado' : 'Pendiente'}
                     </span>
-                    <button onclick="deleteItem('${item.id}')" style="background:none; border:none; color:var(--danger); cursor:pointer;">🗑️</button>
+                    <button onclick="editExpense('${item.id}')" style="background:none; border:none; cursor:pointer;" title="Editar">✏️</button>
+                    <button onclick="deleteItem('${item.id}')" style="background:none; border:none; color:var(--danger); cursor:pointer;" title="Eliminar">🗑️</button>
                 </div>
             `;
             gastosList.appendChild(div);
@@ -1119,7 +1264,7 @@
         }
     }
 
-    // LÓGICA DE INGRESO CON SOPORTE PARA FRECUENTES EN MESES SIGUIENTES
+    // GUARDAR INGRESO
     async function saveIncome(e) {
         e.preventDefault();
         const id = document.getElementById('income-id').value;
@@ -1129,7 +1274,6 @@
         const isFrequent = document.getElementById('income-frequent').checked;
 
         if (id) {
-            // Edición de un ingreso existente
             const payload = {
                 detalle: detail,
                 monto: amount,
@@ -1137,12 +1281,10 @@
             };
             await db.from('movimientos').update(payload).eq('id', id);
         } else {
-            // Creación de nuevo ingreso
             const startIndex = monthsList.indexOf(currentMonth);
             const itemsToInsert = [];
 
             if (isFrequent && startIndex !== -1) {
-                // Agregar el ingreso en el mes actual y en los siguientes meses del año
                 for (let i = startIndex; i < monthsList.length; i++) {
                     itemsToInsert.push({
                         mes: monthsList[i],
@@ -1155,7 +1297,6 @@
                     });
                 }
             } else {
-                // Registrar solo para el mes seleccionado
                 itemsToInsert.push({
                     mes: currentMonth,
                     tipo: 'INCOME',
@@ -1174,33 +1315,43 @@
         await fetchMonthData();
     }
 
+    // GUARDAR GASTO
     async function saveExpense(e) {
         e.preventDefault();
         const id = document.getElementById('expense-id').value;
         const payload = {
-            mes: currentMonth, tipo: 'EXPENSE',
+            mes: currentMonth,
+            tipo: 'EXPENSE',
             categoria: document.getElementById('expense-cat').value,
             detalle: document.getElementById('expense-detail').value,
             monto: parseFloat(document.getElementById('expense-amount').value),
             vencimiento: document.getElementById('expense-venc').value,
             pagado: false
         };
-        if (id) { delete payload.pagado; await db.from('movimientos').update(payload).eq('id', id); }
-        else { await db.from('movimientos').insert([payload]); }
+
+        if (id) {
+            delete payload.pagado;
+            delete payload.mes;
+            await db.from('movimientos').update(payload).eq('id', id);
+        } else {
+            await db.from('movimientos').insert([payload]);
+        }
         closeModal('modal-expense');
         await fetchMonthData();
     }
 
+    // GUARDAR GASTO TARJETA (CALCULANDO VALOR DE CUOTA)
     async function saveCardExpense(e) {
         e.preventDefault();
         const cardSelected = document.getElementById('card-select').value;
         const detail = document.getElementById('card-detail').value;
-        const amount = parseFloat(document.getElementById('card-amount').value);
+        const totalAmount = parseFloat(document.getElementById('card-total-amount').value);
         const venc = document.getElementById('card-venc').value;
         const holder = document.getElementById('card-holder').value;
         const type = document.getElementById('card-type').value;
         const installments = parseInt(document.getElementById('card-installments').value);
 
+        const installmentAmount = totalAmount / installments;
         const startIndex = monthsList.indexOf(currentMonth);
         const itemsToInsert = [];
 
@@ -1211,7 +1362,7 @@
                 tipo: 'EXPENSE',
                 categoria: cardSelected,
                 detalle: installments > 1 ? `${detail} (${i + 1}/${installments})` : detail,
-                monto: amount,
+                monto: installmentAmount,
                 vencimiento: venc,
                 titular: cardSelected === 'Tarjeta BBVA' ? holder : null,
                 tipo_tarjeta: (cardSelected === 'Tarjeta BBVA' || cardSelected === 'Tarjeta Galicia') ? type : null,
@@ -1228,8 +1379,14 @@
 
         const earlyExpenses = expenses.filter(i => {
             if (!i.vencimiento) return false;
-            const dayMatch = i.vencimiento.match(/^(\d+)/);
-            return dayMatch && parseInt(dayMatch[1]) <= 10;
+            let day = 0;
+            if (i.vencimiento.includes('-')) {
+                day = parseInt(i.vencimiento.split('-')[2]);
+            } else {
+                const dayMatch = i.vencimiento.match(/^(\d+)/);
+                if (dayMatch) day = parseInt(dayMatch[1]);
+            }
+            return day > 0 && day <= 10;
         });
 
         const earlyTotal = earlyExpenses.reduce((acc, i) => acc + Number(i.monto), 0);
