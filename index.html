@@ -538,23 +538,17 @@
 
         @media (max-width: 768px) {
             .app-layout { flex-direction: column; }
-            
             .sidebar {
                 position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                width: 100%;
-                height: 65px;
+                bottom: 0; left: 0; right: 0;
+                width: 100%; height: 65px;
                 padding: 0;
                 flex-direction: row;
                 background-color: var(--card-bg);
                 border-top: 1px solid var(--border);
                 z-index: 100;
             }
-
             .sidebar-brand { display: none; }
-
             .sidebar-menu {
                 flex-direction: row;
                 width: 100%;
@@ -562,7 +556,6 @@
                 align-items: center;
                 gap: 0;
             }
-
             .menu-btn {
                 flex-direction: column;
                 gap: 2px;
@@ -573,23 +566,12 @@
                 text-align: center;
                 color: var(--text-muted);
             }
-
-            .menu-btn.active {
-                color: var(--primary);
-                background: transparent;
-            }
-
-            .main-wrapper {
-                height: auto;
-                padding-bottom: 75px;
-            }
-
+            .menu-btn.active { color: var(--primary); background: transparent; }
+            .main-wrapper { height: auto; padding-bottom: 75px; }
             .topbar { padding: 16px; }
             .content-container { padding: 16px; }
-
             .desktop-columns { grid-template-columns: 1fr; }
             .action-bar { grid-template-columns: repeat(2, 1fr); }
-
             .modal {
                 position: absolute;
                 bottom: 0;
@@ -840,7 +822,7 @@
     const cardCategories = ["Tarjeta BBVA", "Tarjeta ICBC", "Tarjeta Galicia"];
     
     let selectedYear = 2026;
-    let currentMonth = "";
+    let currentMonth = "Enero";
     let monthItems = [];
     let currentCardSelected = "Tarjeta BBVA";
     let categoryChart, firstTenDaysChart;
@@ -903,7 +885,7 @@
     }
 
     function selectYear(year) {
-        selectedYear = year;
+        selectedYear = Number(year);
         document.getElementById('btn-year-2026').classList.toggle('active', year === 2026);
         document.getElementById('btn-year-2027').classList.toggle('active', year === 2027);
         fetchHomeSummary();
@@ -923,7 +905,7 @@
         try {
             const { data, error } = await db.from('movimientos').select('*').eq('anio', selectedYear);
             if (error) {
-                console.error("Error al cargar resumen:", error.message);
+                console.error("Error Supabase:", error);
                 return;
             }
             container.innerHTML = '';
@@ -967,7 +949,7 @@
                 .eq('anio', selectedYear);
 
             if (error) {
-                alert("Error al cargar datos del mes: " + error.message);
+                alert("Error al obtener registros: " + (error.message || JSON.stringify(error)));
                 return;
             }
 
@@ -1124,7 +1106,7 @@
 
     async function toggleStatus(id, newStatus) {
         const { error } = await db.from('movimientos').update({ pagado: newStatus }).eq('id', id);
-        if (error) alert("Error al actualizar estado: " + error.message);
+        if (error) alert("Error al actualizar estado: " + (error.message || JSON.stringify(error)));
         else await fetchMonthData();
     }
 
@@ -1134,14 +1116,14 @@
             .eq('mes', currentMonth)
             .eq('anio', selectedYear)
             .eq('categoria', cardCategory);
-        if (error) alert("Error al actualizar tarjetas: " + error.message);
+        if (error) alert("Error al actualizar tarjetas: " + (error.message || JSON.stringify(error)));
         else await fetchMonthData();
     }
 
     async function deleteItem(id) {
         if (confirm('¿Eliminar este registro?')) {
             const { error } = await db.from('movimientos').delete().eq('id', id);
-            if (error) alert("Error al eliminar: " + error.message);
+            if (error) alert("Error al eliminar: " + (error.message || JSON.stringify(error)));
             else await fetchMonthData();
         }
     }
@@ -1156,11 +1138,7 @@
 
         try {
             if (id) {
-                const payload = {
-                    detalle: detail,
-                    monto: amount,
-                    vencimiento: venc
-                };
+                const payload = { detalle: detail, monto: amount, vencimiento: venc };
                 const { error } = await db.from('movimientos').update(payload).eq('id', id);
                 if (error) throw error;
             } else {
@@ -1200,7 +1178,7 @@
             closeModal('modal-income');
             await fetchMonthData();
         } catch (err) {
-            alert("Error al guardar ingreso: " + err.message);
+            alert("Error al guardar ingreso: " + (err.message || JSON.stringify(err)));
         }
     }
 
@@ -1230,7 +1208,7 @@
             closeModal('modal-expense');
             await fetchMonthData();
         } catch (err) {
-            alert("Error al guardar gasto: " + err.message);
+            alert("Error al guardar gasto: " + (err.message || JSON.stringify(err)));
         }
     }
 
@@ -1246,14 +1224,13 @@
 
         const startIndex = monthsList.indexOf(currentMonth);
         const itemsToInsert = [];
-        let calcYear = selectedYear;
 
         for (let i = 0; i < installments; i++) {
             let monthIdx = startIndex + i;
-            let targetYear = calcYear + Math.floor(monthIdx / 12);
+            let targetYear = selectedYear + Math.floor(monthIdx / 12);
             let targetMonth = monthsList[monthIdx % 12];
 
-            itemsToInsert.push({
+            let row = {
                 anio: targetYear,
                 mes: targetMonth,
                 tipo: 'EXPENSE',
@@ -1261,10 +1238,17 @@
                 detalle: installments > 1 ? `${detail} (${i + 1}/${installments})` : detail,
                 monto: amount,
                 vencimiento: venc,
-                titular: cardSelected === 'Tarjeta BBVA' ? holder : null,
-                tipo_tarjeta: (cardSelected === 'Tarjeta BBVA' || cardSelected === 'Tarjeta Galicia') ? type : null,
                 pagado: false
-            });
+            };
+
+            if (cardSelected === 'Tarjeta BBVA') {
+                row.titular = holder;
+                row.tipo_tarjeta = type;
+            } else if (cardSelected === 'Tarjeta Galicia') {
+                row.tipo_tarjeta = type;
+            }
+
+            itemsToInsert.push(row);
         }
 
         try {
@@ -1273,7 +1257,7 @@
             closeModal('modal-card');
             await fetchMonthData();
         } catch (err) {
-            alert("Error al guardar gasto de tarjeta: " + err.message);
+            alert("Error al guardar gasto de tarjeta: " + (err.message || JSON.stringify(err)));
         }
     }
 
