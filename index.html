@@ -59,14 +59,12 @@
             overflow-x: hidden;
         }
 
-        /* LAYOUT PRINCIPAL */
         .app-layout {
             display: flex;
             width: 100vw;
             min-height: 100vh;
         }
 
-        /* SIDEBAR */
         .sidebar {
             width: 260px;
             background-color: var(--sidebar-bg);
@@ -122,7 +120,6 @@
             font-weight: 600;
         }
 
-        /* MAIN AREA */
         .main-wrapper {
             flex: 1;
             display: flex;
@@ -132,7 +129,6 @@
             overflow-y: auto;
         }
 
-        /* TOPBAR / HEADER */
         .topbar {
             background: var(--card-bg);
             border-bottom: 1px solid var(--border);
@@ -173,7 +169,6 @@
         }
         .theme-btn:active { transform: scale(0.95); }
 
-        /* CONTENT CONTAINER */
         .content-container {
             padding: 32px;
             max-width: 1400px;
@@ -181,7 +176,6 @@
             width: 100%;
         }
 
-        /* VIEWS TRANSITION */
         .view-section {
             display: none;
             opacity: 0;
@@ -195,7 +189,6 @@
             transform: translateY(0);
         }
 
-        /* BOTONES DE AÑO */
         .year-selector-container {
             display: flex;
             gap: 12px;
@@ -227,7 +220,6 @@
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
         }
 
-        /* HOME GRID (MESES) */
         .months-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -267,7 +259,6 @@
             color: var(--text-muted);
         }
 
-        /* ACTION BUTTONS BAR */
         .action-bar {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -305,7 +296,6 @@
             color: white;
         }
 
-        /* METRICS GRID */
         .metrics-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -334,7 +324,6 @@
             margin-top: 8px;
         }
 
-        /* DESKTOP 2-COLUMN PANELS */
         .desktop-columns {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -346,7 +335,6 @@
             margin-bottom: 24px;
         }
 
-        /* CHARTS CONTAINER */
         .charts-wrapper {
             display: none;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -371,7 +359,6 @@
             text-align: center;
         }
 
-        /* CARD TABS & LISTS */
         .panel-box {
             background: var(--card-bg);
             border-radius: var(--radius);
@@ -407,7 +394,6 @@
         .data-title { font-size: 0.95rem; font-weight: 600; }
         .data-sub { font-size: 0.78rem; color: var(--text-muted); }
 
-        /* BADGES */
         .badge {
             padding: 6px 12px;
             border-radius: 20px;
@@ -447,7 +433,6 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.06);
         }
 
-        /* MODALES RESPONSIVOS */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -551,7 +536,6 @@
         .text-red { color: var(--danger); }
         .text-blue { color: var(--primary); }
 
-        /* REGLAS RESPONSIVAS PARA MÓVILES (< 768px) */
         @media (max-width: 768px) {
             .app-layout { flex-direction: column; }
             
@@ -619,7 +603,6 @@
 <body>
 
 <div class="app-layout">
-    <!-- NAVIGATION SIDEBAR -->
     <aside class="sidebar">
         <div>
             <div class="sidebar-brand">
@@ -643,9 +626,7 @@
         </div>
     </aside>
 
-    <!-- MAIN CONTENT AREA -->
     <main class="main-wrapper">
-        <!-- TOPBAR HEADER -->
         <header class="topbar">
             <h1 class="topbar-title" id="app-header-title">Resumen Anual</h1>
             <div class="topbar-actions">
@@ -655,7 +636,6 @@
 
         <div class="content-container">
 
-            <!-- VISTA HOME (SELECCIÓN DE AÑO Y MESES) -->
             <div id="view-home" class="view-section active">
                 <p style="color: var(--text-muted); font-weight:600;">Selecciona el año:</p>
                 <div class="year-selector-container">
@@ -667,7 +647,6 @@
                 <div class="months-grid" id="months-container"></div>
             </div>
 
-            <!-- VISTA DEL MES SELECCIONADO -->
             <div id="view-month" class="view-section">
                 
                 <div style="margin-bottom: 20px;">
@@ -676,7 +655,6 @@
                     </button>
                 </div>
 
-                <!-- ACCIONES RÁPIDAS -->
                 <div class="action-bar">
                     <div class="btn-action-card" onclick="openModal('modal-income')">
                         <div class="icon-circle" style="background: var(--success);">+</div>
@@ -696,7 +674,6 @@
                     </div>
                 </div>
 
-                <!-- MÉTRICAS CLAVE -->
                 <div class="metrics-grid">
                     <div class="card-metric"><h3>Ingresos Totales</h3><div class="amount text-green" id="total-ingresos">$0</div></div>
                     <div class="card-metric"><h3>Por Cobrar</h3><div class="amount text-blue" id="total-cobrar">$0</div></div>
@@ -705,7 +682,6 @@
                     <div class="card-metric"><h3>Balance del Mes</h3><div class="amount" id="total-diferencia">$0</div></div>
                 </div>
 
-                <!-- GRÁFICOS -->
                 <div class="charts-wrapper" id="charts-wrapper">
                     <div class="chart-card">
                         <h3>Gastos Primeros 10 Días</h3>
@@ -717,16 +693,12 @@
                     </div>
                 </div>
 
-                <!-- TABLAS / PANELES EN COLUMNAS -->
                 <div class="desktop-columns">
-                    
-                    <!-- PANEL INGRESOS -->
                     <div class="panel-box">
                         <div class="panel-header text-green">💰 Ingresos del Mes</div>
                         <div id="ingresos-list"></div>
                     </div>
 
-                    <!-- PANEL GASTOS -->
                     <div class="panel-box">
                         <div class="panel-header text-red">
                             <span>💸 Gastos del Mes</span>
@@ -744,7 +716,6 @@
                     </div>
                 </div>
 
-                <!-- DETALLE ESPECÍFICO DE TARJETAS DE CRÉDITO -->
                 <div class="full-width-column">
                     <div class="panel-box" style="padding: 20px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
@@ -765,7 +736,6 @@
     </main>
 </div>
 
-<!-- MODAL INGRESO (CON OPCIÓN DE INGRESO FRECUENTE) -->
 <div class="modal-overlay" id="modal-income">
     <div class="modal">
         <div class="modal-header">
@@ -778,7 +748,6 @@
             <div class="form-group"><label>Monto ($)</label><input type="number" step="0.01" id="income-amount" required placeholder="0.00"></div>
             <div class="form-group"><label>Vencimiento</label><input type="text" id="income-venc" placeholder="Ej: 10/8"></div>
             
-            <!-- CHECKBOX INGRESO FRECUENTE -->
             <div class="checkbox-group" id="frequent-income-wrapper">
                 <input type="checkbox" id="income-frequent">
                 <label for="income-frequent">🔄 ¿Es un ingreso frecuente? (Repetir en los meses siguientes)</label>
@@ -789,7 +758,6 @@
     </div>
 </div>
 
-<!-- MODAL GASTO GENERAL -->
 <div class="modal-overlay" id="modal-expense">
     <div class="modal">
         <div class="modal-header">
@@ -817,7 +785,6 @@
     </div>
 </div>
 
-<!-- MODAL GASTO EN TARJETA -->
 <div class="modal-overlay" id="modal-card">
     <div class="modal">
         <div class="modal-header">
@@ -955,6 +922,10 @@
         document.getElementById('app-header-title').innerText = `Resumen Anual ${selectedYear}`;
         try {
             const { data, error } = await db.from('movimientos').select('*').eq('anio', selectedYear);
+            if (error) {
+                console.error("Error al cargar resumen:", error.message);
+                return;
+            }
             container.innerHTML = '';
             monthsList.forEach(month => {
                 const items = data ? data.filter(i => i.mes === month) : [];
@@ -989,16 +960,23 @@
     }
 
     async function fetchMonthData() {
-        const { data, error } = await db.from('movimientos')
-            .select('*')
-            .eq('mes', currentMonth)
-            .eq('anio', selectedYear);
+        try {
+            const { data, error } = await db.from('movimientos')
+                .select('*')
+                .eq('mes', currentMonth)
+                .eq('anio', selectedYear);
 
-        if (!error) {
-            monthItems = data;
+            if (error) {
+                alert("Error al cargar datos del mes: " + error.message);
+                return;
+            }
+
+            monthItems = data || [];
             renderTables();
             renderCardSection();
             renderCharts();
+        } catch (err) {
+            console.error(err);
         }
     }
 
@@ -1146,7 +1124,8 @@
 
     async function toggleStatus(id, newStatus) {
         const { error } = await db.from('movimientos').update({ pagado: newStatus }).eq('id', id);
-        if (!error) await fetchMonthData();
+        if (error) alert("Error al actualizar estado: " + error.message);
+        else await fetchMonthData();
     }
 
     async function toggleGroupCardStatus(cardCategory, newStatus) {
@@ -1155,13 +1134,15 @@
             .eq('mes', currentMonth)
             .eq('anio', selectedYear)
             .eq('categoria', cardCategory);
-        if (!error) await fetchMonthData();
+        if (error) alert("Error al actualizar tarjetas: " + error.message);
+        else await fetchMonthData();
     }
 
     async function deleteItem(id) {
         if (confirm('¿Eliminar este registro?')) {
             const { error } = await db.from('movimientos').delete().eq('id', id);
-            if (!error) await fetchMonthData();
+            if (error) alert("Error al eliminar: " + error.message);
+            else await fetchMonthData();
         }
     }
 
@@ -1173,22 +1154,36 @@
         const venc = document.getElementById('income-venc').value;
         const isFrequent = document.getElementById('income-frequent').checked;
 
-        if (id) {
-            const payload = {
-                detalle: detail,
-                monto: amount,
-                vencimiento: venc
-            };
-            await db.from('movimientos').update(payload).eq('id', id);
-        } else {
-            const startIndex = monthsList.indexOf(currentMonth);
-            const itemsToInsert = [];
+        try {
+            if (id) {
+                const payload = {
+                    detalle: detail,
+                    monto: amount,
+                    vencimiento: venc
+                };
+                const { error } = await db.from('movimientos').update(payload).eq('id', id);
+                if (error) throw error;
+            } else {
+                const startIndex = monthsList.indexOf(currentMonth);
+                const itemsToInsert = [];
 
-            if (isFrequent && startIndex !== -1) {
-                for (let i = startIndex; i < monthsList.length; i++) {
+                if (isFrequent && startIndex !== -1) {
+                    for (let i = startIndex; i < monthsList.length; i++) {
+                        itemsToInsert.push({
+                            anio: selectedYear,
+                            mes: monthsList[i],
+                            tipo: 'INCOME',
+                            categoria: 'Ingresos',
+                            detalle: detail,
+                            monto: amount,
+                            vencimiento: venc,
+                            pagado: false
+                        });
+                    }
+                } else {
                     itemsToInsert.push({
                         anio: selectedYear,
-                        mes: monthsList[i],
+                        mes: currentMonth,
                         tipo: 'INCOME',
                         categoria: 'Ingresos',
                         detalle: detail,
@@ -1197,24 +1192,16 @@
                         pagado: false
                     });
                 }
-            } else {
-                itemsToInsert.push({
-                    anio: selectedYear,
-                    mes: currentMonth,
-                    tipo: 'INCOME',
-                    categoria: 'Ingresos',
-                    detalle: detail,
-                    monto: amount,
-                    vencimiento: venc,
-                    pagado: false
-                });
+
+                const { error } = await db.from('movimientos').insert(itemsToInsert);
+                if (error) throw error;
             }
 
-            await db.from('movimientos').insert(itemsToInsert);
+            closeModal('modal-income');
+            await fetchMonthData();
+        } catch (err) {
+            alert("Error al guardar ingreso: " + err.message);
         }
-
-        closeModal('modal-income');
-        await fetchMonthData();
     }
 
     async function saveExpense(e) {
@@ -1230,10 +1217,21 @@
             vencimiento: document.getElementById('expense-venc').value,
             pagado: false
         };
-        if (id) { delete payload.pagado; await db.from('movimientos').update(payload).eq('id', id); }
-        else { await db.from('movimientos').insert([payload]); }
-        closeModal('modal-expense');
-        await fetchMonthData();
+
+        try {
+            if (id) { 
+                delete payload.pagado; 
+                const { error } = await db.from('movimientos').update(payload).eq('id', id);
+                if (error) throw error;
+            } else { 
+                const { error } = await db.from('movimientos').insert([payload]); 
+                if (error) throw error;
+            }
+            closeModal('modal-expense');
+            await fetchMonthData();
+        } catch (err) {
+            alert("Error al guardar gasto: " + err.message);
+        }
     }
 
     async function saveCardExpense(e) {
@@ -1268,9 +1266,15 @@
                 pagado: false
             });
         }
-        await db.from('movimientos').insert(itemsToInsert);
-        closeModal('modal-card');
-        await fetchMonthData();
+
+        try {
+            const { error } = await db.from('movimientos').insert(itemsToInsert);
+            if (error) throw error;
+            closeModal('modal-card');
+            await fetchMonthData();
+        } catch (err) {
+            alert("Error al guardar gasto de tarjeta: " + err.message);
+        }
     }
 
     function renderCharts() {
