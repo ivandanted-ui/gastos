@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
+<html lang="es"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>App Financiera - Desktop & Mobile Responsive</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>App Financiera - Desktop &amp; Mobile Responsive</title>
+    <script src="./App Financiera - Desktop &amp; Mobile Responsive_files/chart.js.descarga"></script>
+    <script src="./App Financiera - Desktop &amp; Mobile Responsive_files/supabase-js@2"></script>
     <style>
         :root {
             --bg-body: #f4f6f8;
@@ -423,6 +422,7 @@
         .badge:active { transform: scale(0.95); }
         .badge-paid { background-color: rgba(16, 185, 129, 0.15); color: var(--success); }
         .badge-pending { background-color: rgba(239, 68, 68, 0.15); color: var(--danger); }
+        .badge-partial { background-color: rgba(245, 158, 11, 0.15); color: var(--warning); }
 
         .btn-danger-outline {
             background: rgba(239, 68, 68, 0.08);
@@ -455,6 +455,22 @@
             gap: 6px;
         }
         .btn-warning-outline:hover { background: var(--warning); color: white; }
+
+        .btn-primary-outline {
+            background: rgba(37, 99, 235, 0.08);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            color: var(--primary);
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .btn-primary-outline:hover { background: var(--primary); color: white; }
 
         .card-tabs {
             display: flex;
@@ -593,6 +609,7 @@
         .text-green { color: var(--success); }
         .text-red { color: var(--danger); }
         .text-blue { color: var(--primary); }
+        .text-warning { color: var(--warning); }
 
         /* REGLAS RESPONSIVAS PARA MÓVILES */
         @media (max-width: 768px) {
@@ -686,7 +703,7 @@
     <!-- MAIN CONTENT AREA -->
     <main class="main-wrapper">
         <header class="topbar">
-            <h1 class="topbar-title" id="app-header-title">Resumen Anual</h1>
+            <h1 class="topbar-title" id="app-header-title">Septiembre 2026</h1>
             <div class="topbar-actions">
                 <button class="theme-btn" onclick="toggleTheme()" id="theme-btn">🌙</button>
             </div>
@@ -695,7 +712,7 @@
         <div class="content-container">
 
             <!-- VISTA HOME (SELECCIÓN DE MESES) -->
-            <div id="view-home" class="view-section active">
+            <div id="view-home" class="view-section">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
                     <p style="color: var(--text-muted);">Selecciona un mes para gestionar tus finanzas:</p>
                     <button class="btn-danger-outline" onclick="deleteAllDataGlobal()">
@@ -706,7 +723,7 @@
             </div>
 
             <!-- VISTA DEL MES SELECCIONADO -->
-            <div id="view-month" class="view-section">
+            <div id="view-month" class="view-section active">
                 
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
                     <button onclick="showHome()" style="background:none; border:none; color:var(--primary); font-size:1rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px;">
@@ -750,11 +767,11 @@
 
                 <!-- MÉTRICAS CLAVE -->
                 <div class="metrics-grid">
-                    <div class="card-metric"><h3>Ingresos Totales</h3><div class="amount text-green" id="total-ingresos">$0</div></div>
-                    <div class="card-metric"><h3>Por Cobrar</h3><div class="amount text-blue" id="total-cobrar">$0</div></div>
-                    <div class="card-metric"><h3>Gastos Totales</h3><div class="amount text-red" id="total-gastos">$0</div></div>
-                    <div class="card-metric"><h3>Por Pagar</h3><div class="amount text-red" id="total-pagar">$0</div></div>
-                    <div class="card-metric"><h3>Balance del Mes</h3><div class="amount" id="total-diferencia">$0</div></div>
+                    <div class="card-metric"><h3>Ingresos Totales</h3><div class="amount text-green" id="total-ingresos">$ 0,00</div></div>
+                    <div class="card-metric"><h3>Por Cobrar</h3><div class="amount text-blue" id="total-cobrar">$ 0,00</div></div>
+                    <div class="card-metric"><h3>Gastos Totales</h3><div class="amount text-red" id="total-gastos">$ 0,00</div></div>
+                    <div class="card-metric"><h3>Por Pagar</h3><div class="amount text-red" id="total-pagar">$ 0,00</div></div>
+                    <div class="card-metric"><h3>Balance del Mes</h3><div class="amount text-red" id="total-diferencia">$ 0,00</div></div>
                 </div>
 
                 <!-- GRÁFICOS -->
@@ -822,6 +839,33 @@
     </main>
 </div>
 
+<!-- MODAL PAGO PARCIAL TARJETA -->
+<div class="modal-overlay" id="modal-partial-payment">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="text-warning">💳 Registrar Pago Parcial</h3>
+            <button class="close-modal" onclick="closeModal('modal-partial-payment')">✕</button>
+        </div>
+        <form id="form-partial-payment" onsubmit="savePartialPayment(event)">
+            <input type="hidden" id="partial-card-category">
+            <div class="form-group">
+                <label>Tarjeta</label>
+                <input type="text" id="partial-card-name" readonly style="font-weight: 700; background: var(--border);">
+            </div>
+            <div class="form-group">
+                <label>Total de la Tarjeta ($)</label>
+                <input type="text" id="partial-card-total" readonly style="font-weight: 700; background: var(--border);">
+            </div>
+            <div class="form-group">
+                <label>Monto a Pagar / Abonado ($)</label>
+                <input type="number" step="0.01" id="partial-card-amount" required placeholder="Ej: 50000" oninput="calculateRemainingPayment()">
+            </div>
+            <div class="calculated-hint" id="partial-remaining-hint">Queda por pagar: $0,00</div>
+            <button type="submit" class="btn-submit" style="background: var(--warning);">Guardar Pago Parcial</button>
+        </form>
+    </div>
+</div>
+
 <!-- MODAL INGRESO -->
 <div class="modal-overlay" id="modal-income">
     <div class="modal">
@@ -831,8 +875,8 @@
         </div>
         <form id="form-income" onsubmit="saveIncome(event)">
             <input type="hidden" id="income-id">
-            <div class="form-group"><label>Detalle</label><input type="text" id="income-detail" required placeholder="Ej: Sueldo"></div>
-            <div class="form-group"><label>Monto ($)</label><input type="number" step="0.01" id="income-amount" required placeholder="0.00"></div>
+            <div class="form-group"><label>Detalle</label><input type="text" id="income-detail" required="" placeholder="Ej: Sueldo"></div>
+            <div class="form-group"><label>Monto ($)</label><input type="number" step="0.01" id="income-amount" required="" placeholder="0.00"></div>
             <div class="form-group"><label>Fecha de Cobro</label><input type="date" id="income-venc"></div>
             
             <div class="checkbox-group" id="frequent-income-wrapper">
@@ -856,7 +900,7 @@
             <input type="hidden" id="expense-id">
             <div class="form-group">
                 <label>Categoría</label>
-                <select id="expense-cat" required>
+                <select id="expense-cat" required="">
                     <option value="Gastos Generales">Gastos Generales</option>
                     <option value="Gastos Casa">Gastos Casa</option>
                     <option value="Tarjeta BBVA">Tarjeta BBVA</option>
@@ -864,8 +908,8 @@
                     <option value="Tarjeta Galicia">Tarjeta Galicia</option>
                 </select>
             </div>
-            <div class="form-group"><label>Detalle</label><input type="text" id="expense-detail" required placeholder="Ej: Servicio de luz"></div>
-            <div class="form-group"><label>Monto ($)</label><input type="number" step="0.01" id="expense-amount" required placeholder="0.00"></div>
+            <div class="form-group"><label>Detalle</label><input type="text" id="expense-detail" required="" placeholder="Ej: Servicio de luz"></div>
+            <div class="form-group"><label>Monto ($)</label><input type="number" step="0.01" id="expense-amount" required="" placeholder="0.00"></div>
             <div class="form-group"><label>Fecha de Vencimiento</label><input type="date" id="expense-venc"></div>
             <button type="submit" class="btn-submit" style="background: var(--danger);">Guardar Gasto</button>
         </form>
@@ -883,7 +927,7 @@
             <input type="hidden" id="card-id">
             <div class="form-group">
                 <label>Tarjeta / Banco</label>
-                <select id="card-select" onchange="updateCardFormFields()" required>
+                <select id="card-select" onchange="updateCardFormFields()" required="">
                     <option value="Tarjeta BBVA">Tarjeta BBVA</option>
                     <option value="Tarjeta ICBC">Tarjeta ICBC</option>
                     <option value="Tarjeta Galicia">Tarjeta Galicia</option>
@@ -900,7 +944,7 @@
                 <label>Tipo de Tarjeta</label>
                 <select id="card-type"></select>
             </div>
-            <div class="form-group"><label>Detalle</label><input type="text" id="card-detail" placeholder="Ej: Compra Electrónica" required></div>
+            <div class="form-group"><label>Detalle</label><input type="text" id="card-detail" placeholder="Ej: Compra Electrónica" required=""></div>
 
             <div class="form-group">
                 <label>Moneda del Consumo</label>
@@ -917,7 +961,7 @@
 
             <div class="form-group">
                 <label id="lbl-total-amount">Monto Total de la Compra ($ ARS)</label>
-                <input type="number" step="0.01" id="card-total-amount" placeholder="0.00" oninput="calculateInstallmentAmount()" required>
+                <input type="number" step="0.01" id="card-total-amount" placeholder="0.00" oninput="calculateInstallmentAmount()" required="">
             </div>
 
             <div class="form-group" id="group-card-installments">
@@ -927,7 +971,7 @@
 
             <div class="calculated-hint" id="installment-hint">Valor por cuota: $0.00</div>
 
-            <div class="form-group" style="margin-top: 12px;"><label>Fecha Vencimiento Tarjeta</label><input type="date" id="card-venc" required></div>
+            <div class="form-group" style="margin-top: 12px;"><label>Fecha Vencimiento Tarjeta</label><input type="date" id="card-venc" required=""></div>
             <button type="submit" class="btn-submit" style="background: var(--primary);">Guardar Gasto Tarjeta</button>
         </form>
     </div>
@@ -943,8 +987,8 @@
         <form id="form-bank-pdf" onsubmit="handleBankPdfSubmit(event)">
             <div class="form-group">
                 <label for="pdf-bank-select">Banco / Tarjeta</label>
-                <select id="pdf-bank-select" required>
-                    <option value="" disabled selected>Selecciona el banco</option>
+                <select id="pdf-bank-select" required="">
+                    <option value="" disabled="" selected="">Selecciona el banco</option>
                     <option value="Tarjeta BBVA">BBVA</option>
                     <option value="Tarjeta ICBC">ICBC</option>
                     <option value="Tarjeta Galicia">Galicia</option>
@@ -956,7 +1000,7 @@
             </div>
             <div class="form-group">
                 <label for="pdf-file-input">Resumen de Tarjeta (PDF)</label>
-                <input type="file" id="pdf-file-input" accept="application/pdf" required>
+                <input type="file" id="pdf-file-input" accept="application/pdf" required="">
             </div>
             <button type="submit" class="btn-submit" id="btn-process-pdf" style="background: var(--primary);">
                 🤖 Procesar Resumen con IA
@@ -1018,13 +1062,17 @@
 
     const monthsList = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     const cardCategories = ["Tarjeta BBVA", "Tarjeta ICBC", "Tarjeta Galicia"];
-    let currentMonth = "";
+    let currentMonth = "Septiembre";
     let monthItems = [];
     let currentCardSelected = "ALL";
     let categoryChart, firstTenDaysChart;
 
+    let partialPaymentCurrentCardCategory = "";
+    let partialPaymentCurrentTotal = 0;
+
     function initInstallmentsSelect() {
         const select = document.getElementById('card-installments');
+        if (!select) return;
         select.innerHTML = '';
         for (let i = 1; i <= 24; i++) {
             const opt = document.createElement('option');
@@ -1033,7 +1081,6 @@
             select.appendChild(opt);
         }
     }
-    initInstallmentsSelect();
 
     function toggleTheme() {
         document.body.classList.toggle('dark-theme');
@@ -1065,7 +1112,6 @@
         openModal('modal-bank-pdf', false);
     }
 
-    /* LECTURA Y PROCESAMIENTO DE PDF MEDIANTE SIMULACIÓN DE IA DE EXTRACCIÓN */
     async function handleBankPdfSubmit(e) {
         e.preventDefault();
         const bankCategory = document.getElementById('pdf-bank-select').value;
@@ -1095,7 +1141,6 @@
     }
 
     async function processPdfWithAI(file, defaultBank) {
-        // Extracción simulada con columnas 'pesos' y 'dolares' del resumen
         const extractedData = [
             {
                 categoria: cardCategories.includes(defaultBank) ? defaultBank : 'Tarjeta BBVA',
@@ -1143,7 +1188,7 @@
     }
 
     function editIncome(id) {
-        const item = monthItems.find(i => i.id === id);
+        const item = monthItems.find(i => i.id == id);
         if (!item) return;
         document.getElementById('income-id').value = item.id;
         document.getElementById('income-detail').value = item.detalle;
@@ -1162,7 +1207,7 @@
     }
 
     function editExpense(id) {
-        const item = monthItems.find(i => i.id === id);
+        const item = monthItems.find(i => i.id == id);
         if (!item) return;
         document.getElementById('expense-id').value = item.id;
         document.getElementById('expense-cat').value = item.categoria;
@@ -1272,7 +1317,33 @@
             monthsList.forEach(month => {
                 const items = data ? data.filter(i => i.mes === month) : [];
                 let inc = 0, exp = 0;
-                items.forEach(i => i.tipo === 'INCOME' ? inc += getItemAmount(i) : exp += getItemAmount(i));
+
+                // Restar pagos parciales al total gastado visible por el usuario
+                const cardExpenses = items.filter(i => i.tipo === 'EXPENSE' && cardCategories.includes(i.categoria));
+                const nonCardExpenses = items.filter(i => i.tipo === 'EXPENSE' && !cardCategories.includes(i.categoria));
+                const partialPayments = items.filter(i => i.tipo === 'PARTIAL_PAYMENT');
+
+                items.forEach(i => {
+                    if (i.tipo === 'INCOME') inc += getItemAmount(i);
+                });
+
+                nonCardExpenses.forEach(i => exp += getItemAmount(i));
+
+                cardCategories.forEach(cardCat => {
+                    const cItems = cardExpenses.filter(i => i.categoria === cardCat);
+                    const cTotal = cItems.reduce((acc, i) => acc + getItemAmount(i), 0);
+                    const pTotal = partialPayments.filter(i => i.categoria === cardCat).reduce((acc, i) => acc + getItemAmount(i), 0);
+                    const remaining = Math.max(0, cTotal - pTotal);
+
+                    // Si está totalmente pagada en grupo
+                    const allPaid = cItems.length > 0 && cItems.every(i => i.pagado);
+                    if (allPaid) {
+                        exp += cTotal;
+                    } else {
+                        exp += pTotal + remaining;
+                    }
+                });
+
                 const diff = inc - exp;
 
                 const card = document.createElement('div');
@@ -1304,7 +1375,7 @@
     async function fetchMonthData() {
         const { data, error } = await db.from('movimientos').select('*').eq('mes', currentMonth);
         if (!error) {
-            monthItems = data;
+            monthItems = data || [];
             renderTables();
             renderCardSection();
             renderCharts();
@@ -1320,10 +1391,9 @@
         renderCardSection();
     }
 
-    /* RENDERIZADO DETALLADO CON SOPORTE DE COLUMNAS PESOS Y DOLARES */
     function renderCardSection() {
         const wrapper = document.getElementById('card-details-wrapper');
-        let cardItems = monthItems.filter(i => cardCategories.includes(i.categoria));
+        let cardItems = monthItems.filter(i => cardCategories.includes(i.categoria) && i.tipo === 'EXPENSE');
 
         if (currentCardSelected !== 'ALL') {
             cardItems = cardItems.filter(i => i.categoria === currentCardSelected);
@@ -1416,6 +1486,80 @@
         });
     }
 
+    /* PAGO PARCIAL Y RENDERIZADO DE TABLAS */
+    function openModalPartialPayment(cardCategory, totalAmount) {
+        partialPaymentCurrentCardCategory = cardCategory;
+        partialPaymentCurrentTotal = totalAmount;
+
+        const partialPayments = monthItems.filter(i => i.tipo === 'PARTIAL_PAYMENT' && i.categoria === cardCategory);
+        const alreadyPaid = partialPayments.reduce((acc, i) => acc + getItemAmount(i), 0);
+
+        document.getElementById('partial-card-category').value = cardCategory;
+        document.getElementById('partial-card-name').value = cardCategory;
+        document.getElementById('partial-card-total').value = formatMoney(totalAmount);
+        document.getElementById('partial-card-amount').value = '';
+        
+        calculateRemainingPayment();
+        openModal('modal-partial-payment', false);
+    }
+
+    function calculateRemainingPayment() {
+        const inputVal = parseFloat(document.getElementById('partial-card-amount').value) || 0;
+        const cardCategory = partialPaymentCurrentCardCategory;
+        
+        const partialPayments = monthItems.filter(i => i.tipo === 'PARTIAL_PAYMENT' && i.categoria === cardCategory);
+        const alreadyPaid = partialPayments.reduce((acc, i) => acc + getItemAmount(i), 0);
+
+        const totalPaidAfter = alreadyPaid + inputVal;
+        const remaining = Math.max(0, partialPaymentCurrentTotal - totalPaidAfter);
+
+        document.getElementById('partial-remaining-hint').innerText = `Pagado acumulado: ${formatMoney(totalPaidAfter)} | Queda por pagar: ${formatMoney(remaining)}`;
+    }
+
+    async function savePartialPayment(e) {
+        e.preventDefault();
+        const cardCategory = document.getElementById('partial-card-category').value;
+        const amount = parseFloat(document.getElementById('partial-card-amount').value) || 0;
+
+        if (amount <= 0) {
+            alert('Por favor, ingresa un monto válido.');
+            return;
+        }
+
+        const partialPayments = monthItems.filter(i => i.tipo === 'PARTIAL_PAYMENT' && i.categoria === cardCategory);
+        const alreadyPaid = partialPayments.reduce((acc, i) => acc + getItemAmount(i), 0);
+
+        const totalPaidAfter = alreadyPaid + amount;
+
+        const newItem = {
+            mes: currentMonth,
+            tipo: 'PARTIAL_PAYMENT',
+            categoria: cardCategory,
+            detalle: `Pago Parcial ${cardCategory}`,
+            pesos: amount,
+            dolares: 0,
+            pagado: true,
+            vencimiento: new Date().toISOString().split('T')[0]
+        };
+
+        const { error } = await db.from('movimientos').insert([newItem]);
+
+        if (error) {
+            alert('Error al registrar el pago parcial: ' + error.message);
+        } else {
+            // Si el monto total pagado cubre o supera la deuda, marcar consumos como pagados
+            if (totalPaidAfter >= partialPaymentCurrentTotal) {
+                await db.from('movimientos')
+                    .update({ pagado: true })
+                    .eq('mes', currentMonth)
+                    .eq('categoria', cardCategory)
+                    .eq('tipo', 'EXPENSE');
+            }
+            closeModal('modal-partial-payment');
+            await fetchMonthData();
+        }
+    }
+
     function renderTables() {
         const ingresosList = document.getElementById('ingresos-list');
         const gastosList = document.getElementById('gastos-list');
@@ -1454,10 +1598,12 @@
         });
 
         const allExpenseItems = monthItems.filter(i => i.tipo === 'EXPENSE');
+        const partialPayments = monthItems.filter(i => i.tipo === 'PARTIAL_PAYMENT');
+
         allExpenseItems.forEach(i => {
             const amount = getItemAmount(i);
             totalExp += amount;
-            if (!i.pagado) totalPagar += amount;
+            if (!i.pagado && !cardCategories.includes(i.categoria)) totalPagar += amount;
         });
 
         let normalExpenses = allExpenseItems.filter(i => !cardCategories.includes(i.categoria));
@@ -1493,22 +1639,47 @@
         cardCategories.forEach(cardCat => {
             if (filterCat === 'ALL' || filterCat === cardCat) {
                 const cardItems = allExpenseItems.filter(i => i.categoria === cardCat);
+                const cardPartials = partialPayments.filter(i => i.categoria === cardCat);
+
                 if (cardItems.length > 0) {
                     const cardTotal = cardItems.reduce((acc, i) => acc + getItemAmount(i), 0);
-                    const allPaid = cardItems.every(i => i.pagado);
+                    const paidPartialsTotal = cardPartials.reduce((acc, i) => acc + getItemAmount(i), 0);
+                    const remainingToPay = Math.max(0, cardTotal - paidPartialsTotal);
+
+                    const allPaid = cardItems.every(i => i.pagado) || remainingToPay === 0;
+
+                    if (!allPaid) {
+                        totalPagar += remainingToPay;
+                    }
 
                     const div = document.createElement('div');
                     div.className = 'data-item';
                     div.style.background = 'rgba(37, 99, 235, 0.04)';
+
+                    let statusText = allPaid ? 'Pagada' : (paidPartialsTotal > 0 ? `Parcial (${formatMoney(paidPartialsTotal)})` : 'Pagar Total');
+                    let statusClass = allPaid ? 'badge-paid' : (paidPartialsTotal > 0 ? 'badge-partial' : 'badge-pending');
+
+                    let subInfoText = `${cardItems.length} consumos agrupados`;
+                    if (paidPartialsTotal > 0 && !allPaid) {
+                        subInfoText += ` • <strong>Queda por pagar: ${formatMoney(remainingToPay)}</strong>`;
+                    }
+
                     div.innerHTML = `
                         <div class="data-info">
                             <span class="data-title" style="color:var(--primary); font-weight:700;">${cardCat}</span>
-                            <span class="data-sub">${cardItems.length} consumos agrupados</span>
+                            <span class="data-sub">${subInfoText}</span>
                         </div>
-                        <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                             <span style="font-weight:700;" class="text-red">${formatMoney(cardTotal)}</span>
-                            <span class="badge ${allPaid ? 'badge-paid' : 'badge-pending'}" onclick="toggleGroupCardStatus('${cardCat}', ${!allPaid})">
-                                ${allPaid ? 'Pagada' : 'Pagar Total'}
+                            
+                            ${!allPaid ? `
+                                <button class="btn-primary-outline" onclick="openModalPartialPayment('${cardCat}', ${cardTotal})">
+                                    💵 Pago Parcial
+                                </button>
+                            ` : ''}
+
+                            <span class="badge ${statusClass}" onclick="toggleGroupCardStatus('${cardCat}', ${!allPaid})">
+                                ${statusText}
                             </span>
                         </div>
                     `;
@@ -1596,7 +1767,7 @@
             .eq('mes', currentMonth);
 
         if (error) {
-            alert('Error al eliminar los ingresos del mes: ' + error.message);
+            alert('Error al borrar los ingresos: ' + error.message);
         } else {
             await fetchMonthData();
         }
@@ -1606,233 +1777,201 @@
         e.preventDefault();
         const id = document.getElementById('income-id').value;
         const detail = document.getElementById('income-detail').value;
-        const amount = parseFloat(document.getElementById('income-amount').value);
+        const amount = parseFloat(document.getElementById('income-amount').value) || 0;
         const venc = document.getElementById('income-venc').value;
         const isFrequent = document.getElementById('income-frequent').checked;
 
         if (id) {
-            const payload = {
+            const { error } = await db.from('movimientos').update({
+                detalle: detail,
+                pesos: amount,
+                vencimiento: venc
+            }).eq('id', id);
+            if (!error) {
+                closeModal('modal-income');
+                await fetchMonthData();
+            }
+        } else {
+            const currentIdx = monthsList.indexOf(currentMonth);
+            const targetMonths = isFrequent ? monthsList.slice(currentIdx) : [currentMonth];
+
+            const itemsToInsert = targetMonths.map(m => ({
+                mes: m,
+                tipo: 'INCOME',
+                categoria: 'Ingreso',
                 detalle: detail,
                 pesos: amount,
                 dolares: 0,
-                vencimiento: venc
-            };
-            await db.from('movimientos').update(payload).eq('id', id);
-        } else {
-            const startIndex = monthsList.indexOf(currentMonth);
-            const itemsToInsert = [];
+                vencimiento: venc,
+                pagado: false
+            }));
 
-            if (isFrequent && startIndex !== -1) {
-                for (let i = startIndex; i < monthsList.length; i++) {
-                    itemsToInsert.push({
-                        mes: monthsList[i],
-                        tipo: 'INCOME',
-                        categoria: 'Ingresos',
-                        detalle: detail,
-                        pesos: amount,
-                        dolares: 0,
-                        vencimiento: venc,
-                        pagado: false
-                    });
-                }
-            } else {
-                itemsToInsert.push({
-                    mes: currentMonth,
-                    tipo: 'INCOME',
-                    categoria: 'Ingresos',
-                    detalle: detail,
-                    pesos: amount,
-                    dolares: 0,
-                    vencimiento: venc,
-                    pagado: false
-                });
+            const { error } = await db.from('movimientos').insert(itemsToInsert);
+            if (!error) {
+                closeModal('modal-income');
+                await fetchMonthData();
             }
-
-            await db.from('movimientos').insert(itemsToInsert);
         }
-
-        closeModal('modal-income');
-        await fetchMonthData();
     }
 
     async function saveExpense(e) {
         e.preventDefault();
         const id = document.getElementById('expense-id').value;
-        const amount = parseFloat(document.getElementById('expense-amount').value);
-        const payload = {
-            mes: currentMonth,
-            tipo: 'EXPENSE',
-            categoria: document.getElementById('expense-cat').value,
-            detalle: document.getElementById('expense-detail').value,
-            pesos: amount,
-            dolares: 0,
-            vencimiento: document.getElementById('expense-venc').value,
-            pagado: false
-        };
+        const cat = document.getElementById('expense-cat').value;
+        const detail = document.getElementById('expense-detail').value;
+        const amount = parseFloat(document.getElementById('expense-amount').value) || 0;
+        const venc = document.getElementById('expense-venc').value;
 
         if (id) {
-            delete payload.pagado;
-            delete payload.mes;
-            await db.from('movimientos').update(payload).eq('id', id);
+            const { error } = await db.from('movimientos').update({
+                categoria: cat,
+                detalle: detail,
+                pesos: amount,
+                vencimiento: venc
+            }).eq('id', id);
+            if (!error) {
+                closeModal('modal-expense');
+                await fetchMonthData();
+            }
         } else {
-            await db.from('movimientos').insert([payload]);
+            const { error } = await db.from('movimientos').insert([{
+                mes: currentMonth,
+                tipo: 'EXPENSE',
+                categoria: cat,
+                detalle: detail,
+                pesos: amount,
+                dolares: 0,
+                vencimiento: venc,
+                pagado: false
+            }]);
+            if (!error) {
+                closeModal('modal-expense');
+                await fetchMonthData();
+            }
         }
-        closeModal('modal-expense');
-        await fetchMonthData();
     }
 
     async function saveCardExpense(e) {
         e.preventDefault();
-        const cardSelected = document.getElementById('card-select').value;
-        let detail = document.getElementById('card-detail').value;
-        const currency = document.getElementById('card-currency').value;
-        const rawAmount = parseFloat(document.getElementById('card-total-amount').value);
-        const usdRate = parseFloat(document.getElementById('card-usd-rate').value) || 0;
-        const venc = document.getElementById('card-venc').value;
+        const selectedCard = document.getElementById('card-select').value;
         const holder = document.getElementById('card-holder').value;
-        const type = document.getElementById('card-type').value;
-        const installments = parseInt(document.getElementById('card-installments').value);
+        const cardType = document.getElementById('card-type').value;
+        const detail = document.getElementById('card-detail').value;
+        const currency = document.getElementById('card-currency').value;
+        const totalAmount = parseFloat(document.getElementById('card-total-amount').value) || 0;
+        const usdRate = parseFloat(document.getElementById('card-usd-rate').value) || 0;
+        const installments = parseInt(document.getElementById('card-installments').value) || 1;
+        const venc = document.getElementById('card-venc').value;
 
-        let pesosVal = 0;
-        let dolaresVal = 0;
+        let totalInArs = totalAmount;
+        let pesosPerInst = 0;
+        let dolaresPerInst = 0;
 
         if (currency === 'USD') {
-            dolaresVal = rawAmount / installments;
-            detail += ` (USD $${rawAmount.toFixed(2)} @ $${usdRate})`;
+            dolaresPerInst = totalAmount / installments;
+            pesosPerInst = 0;
         } else {
-            pesosVal = rawAmount / installments;
+            pesosPerInst = totalAmount / installments;
+            dolaresPerInst = 0;
         }
 
-        const startIndex = monthsList.indexOf(currentMonth);
+        const currentIdx = monthsList.indexOf(currentMonth);
         const itemsToInsert = [];
 
         for (let i = 0; i < installments; i++) {
-            const monthIdx = (startIndex + i) % 12;
+            const targetMonthIdx = (currentIdx + i) % 12;
+            const targetMonth = monthsList[targetMonthIdx];
+
+            let instDetail = detail;
+            if (installments > 1) {
+                instDetail += ` (${i + 1}/${installments})`;
+            }
+
             itemsToInsert.push({
-                mes: monthsList[monthIdx],
+                mes: targetMonth,
                 tipo: 'EXPENSE',
-                categoria: cardSelected,
-                detalle: installments > 1 ? `${detail} (${i + 1}/${installments})` : detail,
-                pesos: pesosVal,
-                dolares: dolaresVal,
+                categoria: selectedCard,
+                detalle: instDetail,
+                pesos: pesosPerInst,
+                dolares: dolaresPerInst,
                 vencimiento: venc,
                 titular: holder,
-                tipo_tarjeta: type,
+                tipo_tarjeta: cardType,
                 pagado: false
             });
         }
-        await db.from('movimientos').insert(itemsToInsert);
-        closeModal('modal-card');
-        await fetchMonthData();
+
+        const { error } = await db.from('movimientos').insert(itemsToInsert);
+        if (!error) {
+            closeModal('modal-card');
+            await fetchMonthData();
+        }
+    }
+
+    function renderCharts() {
+        const ctxCat = document.getElementById('categoryChart');
+        const ctxTen = document.getElementById('firstTenDaysChart');
+
+        if (!ctxCat || !ctxTen) return;
+
+        if (categoryChart) categoryChart.destroy();
+        if (firstTenDaysChart) firstTenDaysChart.destroy();
+
+        const expenses = monthItems.filter(i => i.tipo === 'EXPENSE');
+        const catMap = {};
+        let firstTenTotal = 0;
+
+        expenses.forEach(i => {
+            const amt = getItemAmount(i);
+            catMap[i.categoria] = (catMap[i.categoria] || 0) + amt;
+
+            if (i.vencimiento) {
+                const day = parseInt(i.vencimiento.split('-')[2]) || 0;
+                if (day > 0 && day <= 10) {
+                    firstTenTotal += amt;
+                }
+            }
+        });
+
+        categoryChart = new Chart(ctxCat, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(catMap),
+                datasets: [{
+                    data: Object.values(catMap),
+                    backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        firstTenDaysChart = new Chart(ctxTen, {
+            type: 'bar',
+            data: {
+                labels: ['Días 1-10', 'Resto del Mes'],
+                datasets: [{
+                    label: 'Monto ($)',
+                    data: [firstTenTotal, expenses.reduce((acc, i) => acc + getItemAmount(i), 0) - firstTenTotal],
+                    backgroundColor: ['#f59e0b', '#2563eb']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
     }
 
     function openModalAlerts() {
-        document.getElementById('alert-phone').value = localStorage.getItem('cfg_phone') || '';
-        document.getElementById('alert-email').value = localStorage.getItem('cfg_email') || '';
-        document.getElementById('due-bbva').value = localStorage.getItem('cfg_due_bbva') || '10';
-        document.getElementById('due-icbc').value = localStorage.getItem('cfg_due_icbc') || '15';
-        document.getElementById('due-galicia').value = localStorage.getItem('cfg_due_galicia') || '20';
-        
-        renderAlertActions();
         openModal('modal-alerts', false);
     }
 
     function saveAlertConfig() {
-        localStorage.setItem('cfg_phone', document.getElementById('alert-phone').value);
-        localStorage.setItem('cfg_email', document.getElementById('alert-email').value);
-        localStorage.setItem('cfg_due_bbva', document.getElementById('due-bbva').value);
-        localStorage.setItem('cfg_due_icbc', document.getElementById('due-icbc').value);
-        localStorage.setItem('cfg_due_galicia', document.getElementById('due-galicia').value);
-        alert('Configuración guardada.');
-        renderAlertActions();
+        alert('Configuración de alertas guardada correctamente.');
+        closeModal('modal-alerts');
     }
 
-    function renderAlertActions() {
-        const container = document.getElementById('alert-actions-wrapper');
-        container.innerHTML = '';
-
-        const phone = localStorage.getItem('cfg_phone');
-        const email = localStorage.getItem('cfg_email');
-
-        cardCategories.forEach(card => {
-            const key = card === 'Tarjeta BBVA' ? 'bbva' : card === 'Tarjeta ICBC' ? 'icbc' : 'galicia';
-            const day = localStorage.getItem(`cfg_due_${key}`) || '10';
-            
-            const cardExpenses = monthItems.filter(i => i.categoria === card);
-            const totalPending = cardExpenses.filter(i => !i.pagado).reduce((acc, i) => acc + getItemAmount(i), 0);
-
-            const div = document.createElement('div');
-            div.style.padding = '10px';
-            div.style.border = '1px solid var(--border)';
-            div.style.borderRadius = '10px';
-            div.style.background = 'var(--input-bg)';
-
-            let msg = `Hola! Recordatorio de vencimiento de ${card} el día ${day} de ${currentMonth}. Total pendiente: ${formatMoney(totalPending)}.`;
-
-            let buttons = '';
-            if (phone) {
-                const waUrl = `https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(msg)}`;
-                buttons += `<a href="${waUrl}" target="_blank" style="text-decoration:none; display:inline-block; padding:6px 10px; background:#25D366; color:white; border-radius:6px; font-size:0.75rem; font-weight:700;">💬 Enviar WhatsApp</a> `;
-            }
-            if (email) {
-                const mailUrl = `mailto:${email}?subject=${encodeURIComponent('Vencimiento ' + card)}&body=${encodeURIComponent(msg)}`;
-                buttons += `<a href="${mailUrl}" style="text-decoration:none; display:inline-block; padding:6px 10px; background:#2563eb; color:white; border-radius:6px; font-size:0.75rem; font-weight:700;">✉️ Enviar Email</a>`;
-            }
-
-            div.innerHTML = `
-                <div style="font-weight:700; font-size:0.85rem;">${card} (Vence el ${day})</div>
-                <div style="font-size:0.8rem; color:var(--text-muted); margin:4px 0;">Monto Pendiente: ${formatMoney(totalPending)}</div>
-                <div style="margin-top:6px;">${buttons || '<span style="font-size:0.75rem; color:var(--text-muted);">Ingresa teléfono/email arriba para activar accesos rápidos.</span>'}</div>
-            `;
-            container.appendChild(div);
-        });
-    }
-
-    function renderCharts() {
-        const expenses = monthItems.filter(i => i.tipo === 'EXPENSE');
-
-        const earlyExpenses = expenses.filter(i => {
-            if (!i.vencimiento) return false;
-            let day = 0;
-            if (i.vencimiento.includes('-')) {
-                day = parseInt(i.vencimiento.split('-')[2]);
-            } else {
-                const dayMatch = i.vencimiento.match(/^(\d+)/);
-                if (dayMatch) day = parseInt(dayMatch[1]);
-            }
-            return day > 0 && day <= 10;
-        });
-
-        const earlyTotal = earlyExpenses.reduce((acc, i) => acc + getItemAmount(i), 0);
-        const restTotal = expenses.reduce((acc, i) => acc + getItemAmount(i), 0) - earlyTotal;
-
-        if (firstTenDaysChart) firstTenDaysChart.destroy();
-        const ctx1 = document.getElementById('firstTenDaysChart').getContext('2d');
-        firstTenDaysChart = new Chart(ctx1, {
-            type: 'doughnut',
-            data: {
-                labels: ['Días 1-10', 'Resto'],
-                datasets: [{ data: [earlyTotal, restTotal], backgroundColor: ['#f59e0b', '#64748b'] }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-
-        const categories = {};
-        expenses.forEach(i => categories[i.categoria] = (categories[i.categoria] || 0) + getItemAmount(i));
-
-        if (categoryChart) categoryChart.destroy();
-        const ctx2 = document.getElementById('categoryChart').getContext('2d');
-        categoryChart = new Chart(ctx2, {
-            type: 'pie',
-            data: {
-                labels: Object.keys(categories),
-                datasets: [{ data: Object.values(categories), backgroundColor: ['#2563eb', '#10b981', '#ef4444', '#6366f1', '#f59e0b'] }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-    }
-
-    fetchHomeSummary();
+    document.addEventListener('DOMContentLoaded', () => {
+        initInstallmentsSelect();
+        fetchMonthData();
+    });
 </script>
-</body>
-</html>
+
+</body></html>
